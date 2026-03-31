@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projects — Rakesh Verma</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="edit-hint">✏️ Click any text to edit it — changes save automatically</div>
+
+  <nav>
+    <span class="nav-brand" contenteditable="true" data-key="nav-brand">Rakesh Verma</span>
+    <a href="home.html">Home</a>
+    <a href="about.html">About</a>
+    <a href="projects.html" class="active">Projects</a>
+  </nav>
+
+  <main>
+    <h2>Projects</h2>
+
+    <div class="cards-grid">
+
+      <div class="card">
+        <h3 contenteditable="true" data-key="proj1-title">Project One</h3>
+        <p contenteditable="true" data-key="proj1-desc">A short description of what this project does, the problem it solves, and the tech used to build it.</p>
+        <a href="#" class="btn btn-outline" contenteditable="true" data-key="proj1-btn">View Project</a>
+      </div>
+
+      <div class="card">
+        <h3 contenteditable="true" data-key="proj2-title">Project Two</h3>
+        <p contenteditable="true" data-key="proj2-desc">A short description of what this project does, the problem it solves, and the tech used to build it.</p>
+        <a href="#" class="btn btn-outline" contenteditable="true" data-key="proj2-btn">View Project</a>
+      </div>
+
+      <div class="card">
+        <h3 contenteditable="true" data-key="proj3-title">Project Three</h3>
+        <p contenteditable="true" data-key="proj3-desc">A short description of what this project does, the problem it solves, and the tech used to build it.</p>
+        <a href="#" class="btn btn-outline" contenteditable="true" data-key="proj3-btn">View Project</a>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    document.querySelectorAll('[contenteditable]').forEach(el => {
+      const key = el.dataset.key;
+      const saved = localStorage.getItem('portfolio_' + key);
+      if (saved) el.innerHTML = saved;
+
+      el.addEventListener('blur', () => {
+        localStorage.setItem('portfolio_' + key, el.innerHTML);
+      });
+
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+      });
+    });
+  </script>
+
+</body>
+</html>
