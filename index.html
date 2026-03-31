@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rakesh Verma — Portfolio</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="edit-hint">✏️ Click any text to edit it — changes save automatically</div>
+
+  <nav>
+    <span class="nav-brand" contenteditable="true" data-key="nav-brand">Rakesh Verma</span>
+    <a href="index.html" class="active">Home</a>
+    <a href="about.html">About</a>
+    <a href="projects.html">Projects</a>
+  </nav>
+
+  <main>
+    <section class="hero">
+      <h1 contenteditable="true" data-key="home-name">Rakesh Verma</h1>
+      <p contenteditable="true" data-key="home-tagline">Developer. Builder. Thinker.</p>
+      <a href="projects.html" class="btn" contenteditable="true" data-key="home-cta">View My Projects</a>
+    </section>
+  </main>
+
+  <script>
+    // Save on blur, restore on load
+    document.querySelectorAll('[contenteditable]').forEach(el => {
+      const key = el.dataset.key;
+      const saved = localStorage.getItem('portfolio_' + key);
+      if (saved) el.innerHTML = saved;
+
+      el.addEventListener('blur', () => {
+        localStorage.setItem('portfolio_' + key, el.innerHTML);
+      });
+
+      // Prevent links from navigating when editing
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+      });
+    });
+  </script>
+
+</body>
+</html>
