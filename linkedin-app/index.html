@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinkedIn Post Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* ─── Design Tokens (from design.md) ─── */
+    :root {
+      --bg:            #0A0E27;
+      --surface:       #111830;
+      --overlay:       rgba(255,255,255,0.05);
+      --pink:          #E91E8C;
+      --pink-hover:    #f02b98;
+      --blue:          #5B63EB;
+      --blue-hover:    #6E75F0;
+      --white:         #FFFFFF;
+      --secondary:     #B4B4B4;
+      --muted:         #6B7A99;
+      --border:        #2A3858;
+      --r-sm:          6px;
+      --r-md:          10px;
+      --r-lg:          16px;
+      --r-xl:          24px;
+      --r-full:        9999px;
+      --shadow-sm:     0 2px 8px rgba(0,0,0,0.3);
+      --shadow-md:     0 8px 24px rgba(0,0,0,0.4);
+      --shadow-lg:     0 16px 48px rgba(0,0,0,0.5);
+      --glow-blue:     0 0 24px rgba(91,99,235,0.35);
+      --glow-pink:     0 0 24px rgba(233,30,140,0.35);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', 'Poppins', sans-serif;
+      background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(91,99,235,0.25) 0%, transparent 60%), var(--bg);
+      background-attachment: fixed;
+      color: var(--white);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* ─── NAVBAR ─── */
+    .navbar {
+      position: sticky; top: 0; z-index: 200;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px; padding: 0 32px;
+      background: rgba(10,14,39,0.95);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo { font-size: 17px; font-weight: 800; color: var(--white); letter-spacing: -0.3px; cursor: pointer; }
+    .nav-logo span { color: var(--pink); }
+    .nav-links { display: flex; align-items: center; gap: 4px; }
+    .nav-btn {
+      background: transparent; border: none;
+      color: var(--secondary); font-size: 14px; font-weight: 500;
+      padding: 8px 14px; border-radius: var(--r-md);
+      cursor: pointer; transition: color 0.2s, background 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .nav-btn:hover { color: var(--white); background: rgba(255,255,255,0.06); }
+    .nav-btn.active { color: var(--white); background: rgba(91,99,235,0.18); }
+    a.nav-btn { text-decoration: none; display: inline-flex; align-items: center; }
+
+    /* ─── LAYOUT ─── */
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+    /* ─── SCREENS ─── */
+    .screen { display: none; padding: 48px 0 96px; }
+    .screen.active { display: block; }
+
+    /* ─── TYPOGRAPHY ─── */
+    .page-title { font-size: 38px; font-weight: 800; color: var(--white); line-height: 1.15; letter-spacing: -0.5px; }
+    .page-title em { font-style: normal; color: var(--pink); }
+    .page-sub { font-size: 17px; color: var(--secondary); margin-top: 8px; font-weight: 400; }
+    .section-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+
+    /* ─── BADGES ─── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 12px; border-radius: var(--r-full);
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap;
+    }
+    .badge-blue  { background: rgba(91,99,235,0.15);  color: var(--blue);  border: 1px solid rgba(91,99,235,0.3); }
+    .badge-pink  { background: rgba(233,30,140,0.15); color: var(--pink);  border: 1px solid rgba(233,30,140,0.3); }
+    .badge-green { background: rgba(34,197,94,0.12);  color: #4ade80;      border: 1px solid rgba(34,197,94,0.25); }
+    .badge-muted { background: rgba(255,255,255,0.06); color: var(--secondary); border: 1px solid var(--border); }
+
+    /* ─── BUTTONS ─── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px 22px; border-radius: var(--r-md);
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s ease; font-family: 'Inter', sans-serif;
+      border: none; text-decoration: none; white-space: nowrap;
+    }
+    .btn-primary { background: var(--blue); color: var(--white); }
+    .btn-primary:hover { background: var(--blue-hover); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(91,99,235,0.4); }
+    .btn-outline { background: transparent; color: var(--white); border: 1.5px solid var(--border); }
+    .btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+    .btn-pink { background: var(--pink); color: var(--white); }
+    .btn-pink:hover { background: var(--pink-hover); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(233,30,140,0.4); }
+    .btn-lg { padding: 15px 32px; font-size: 16px; }
+    .btn-full { width: 100%; }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+    /* ─── CARDS ─── */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 24px; }
+    .card-accent { border-color: var(--blue) !important; box-shadow: 0 0 0 1px rgba(91,99,235,0.3), 0 8px 32px rgba(91,99,235,0.15); }
+    .card-glass {
+      background: rgba(255,255,255,0.04); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: var(--r-xl); box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    /* ─── INPUTS ─── */
+    .form-group { display: flex; flex-direction: column; gap: 7px; }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.06em; }
+    .form-input, .form-select {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--r-md); padding: 12px 16px;
+      color: var(--white); font-size: 15px; font-family: 'Inter', sans-serif;
+      outline: none; width: 100%;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-input::placeholder { color: var(--muted); }
+    .form-input:focus, .form-select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(91,99,235,0.2); }
+    .form-select option { background: var(--surface); }
+
+    /* ─── KEY INPUT WITH TOGGLE ─── */
+    .key-wrap { position: relative; }
+    .key-wrap .form-input { padding-right: 48px; }
+    .key-toggle {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: transparent; border: none; color: var(--muted);
+      cursor: pointer; font-size: 16px; padding: 4px;
+      transition: color 0.2s;
+    }
+    .key-toggle:hover { color: var(--white); }
+
+    /* ─── PROVIDER SELECTOR ─── */
+    .provider-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .prov-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 18px; border-radius: var(--r-md);
+      border: 1.5px solid var(--border); background: transparent;
+      color: var(--secondary); font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;
+    }
+    .prov-btn:hover { border-color: var(--blue); color: var(--white); background: rgba(91,99,235,0.07); }
+    .prov-btn.sel { border-color: var(--blue); background: rgba(91,99,235,0.15); color: var(--white); box-shadow: 0 0 0 1px rgba(91,99,235,0.25); }
+    .prov-dot { width: 9px; height: 9px; border-radius: 50%; }
+    .dot-purple { background: #a855f7; }
+    .dot-green  { background: #10b981; }
+    .dot-blue   { background: #3b82f6; }
+
+    /* ─── API ERROR BANNER ─── */
+    .api-error {
+      display: none; align-items: center; gap: 12px;
+      padding: 14px 18px; margin-top: 16px;
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+      border-radius: var(--r-md); color: #fca5a5; font-size: 14px; font-weight: 500;
+    }
+    .api-error.vis { display: flex; }
+    .api-error-icon { font-size: 18px; flex-shrink: 0; }
+
+    /* ─── DIVIDER ─── */
+    hr { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
+    .section-divider {
+      display: flex; align-items: center; gap: 12px; margin: 28px 0;
+      color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em;
+    }
+    .section-divider::before, .section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ─── TABLES ─── */
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--r-lg); }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead th {
+      background: var(--surface); padding: 13px 16px; text-align: left;
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.07em;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.025); }
+    tbody td { padding: 13px 16px; color: var(--secondary); vertical-align: middle; }
+    tbody td:first-child { color: var(--white); font-weight: 500; }
+    .score-val { font-weight: 800; font-size: 15px; color: var(--pink) !important; }
+    .topic-cell { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ─── EMPTY STATE ─── */
+    .empty-state { text-align: center; padding: 52px 24px; color: var(--muted); }
+    .empty-icon { font-size: 42px; margin-bottom: 14px; }
+    .empty-state p { font-size: 15px; }
+
+    /* ─── SPINNER ─── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { width: 56px; height: 56px; border: 4px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.85s linear infinite; }
+
+    /* ─── PULSE DOTS ─── */
+    @keyframes pdot {
+      0%,80%,100% { opacity: 0.2; transform: scale(0.7); }
+      40%          { opacity: 1;   transform: scale(1);   }
+    }
+    .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--blue); animation: pdot 1.4s ease-in-out infinite; }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+
+    /* ─── TOAST ─── */
+    #toast {
+      position: fixed; bottom: 28px; right: 28px; z-index: 9999;
+      background: var(--surface); border: 1px solid var(--blue);
+      border-radius: var(--r-md); padding: 13px 20px;
+      font-size: 14px; font-weight: 600; color: var(--white);
+      box-shadow: var(--shadow-md); opacity: 0; pointer-events: none;
+      transition: opacity 0.3s, transform 0.3s; transform: translateY(12px);
+    }
+    #toast.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+    /* ════════════════════════
+       SCREEN 1 — DASHBOARD
+    ════════════════════════ */
+    .dash-top { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 24px; margin-bottom: 40px; }
+    .theme-block { display: flex; flex-direction: column; gap: 10px; }
+    .theme-day-lbl { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+    .theme-heading { font-size: 32px; font-weight: 800; color: var(--white); line-height: 1; }
+    .theme-heading em { font-style: normal; color: var(--pink); }
+    .streak-box { display: flex; align-items: center; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 20px 28px; }
+    .streak-fire { font-size: 34px; line-height: 1; }
+    .streak-num { font-size: 44px; font-weight: 800; color: var(--pink); line-height: 1; }
+    .streak-lbl { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+    /* ════════════════════════
+       SCREEN 2 — GENERATOR
+    ════════════════════════ */
+    .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+    .mode-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 26px 20px; border-radius: var(--r-lg);
+      border: 2px solid var(--border); background: transparent;
+      cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;
+    }
+    .mode-btn .m-icon  { font-size: 30px; }
+    .mode-btn .m-title { font-size: 15px; font-weight: 700; color: var(--white); }
+    .mode-btn .m-sub   { font-size: 12px; color: var(--muted); font-weight: 400; text-align: center; }
+    .mode-btn:hover { border-color: var(--blue); background: rgba(91,99,235,0.07); }
+    .mode-btn.sel   { border-color: var(--blue); background: rgba(91,99,235,0.14); box-shadow: 0 0 0 1px rgba(91,99,235,0.25); }
+    .gen-form { display: flex; flex-direction: column; gap: 20px; max-width: 680px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    #manual-group { display: none; }
+    #manual-group.vis { display: flex; flex-direction: column; gap: 7px; }
+
+    /* ════════════════════════
+       SCREEN 3 — LOADING
+    ════════════════════════ */
+    .load-inner { display: flex; flex-direction: column; align-items: center; gap: 26px; padding: 120px 0; }
+    .load-title { font-size: 21px; font-weight: 700; color: var(--white); }
+    .load-sub   { font-size: 14px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+    .load-provider-lbl { font-size: 13px; color: var(--blue); font-weight: 600; margin-top: -12px; }
+
+    /* ════════════════════════
+       POST INTELLIGENCE CARD
+    ════════════════════════ */
+    .intel-card {
+      background: rgba(91,99,235,0.06);
+      border: 1px solid rgba(91,99,235,0.22);
+      border-radius: var(--r-xl); padding: 28px;
+      margin-bottom: 32px; display: none;
+    }
+    .intel-card.vis { display: block; }
+    .intel-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 24px; }
+    .intel-topic { font-size: 18px; font-weight: 700; color: var(--white); line-height: 1.4; max-width: 680px; }
+    .intel-topic span { color: var(--pink); }
+    .intel-vs-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+    .intel-vs-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; }
+    .intel-vs-num { font-size: 52px; font-weight: 800; color: var(--pink); line-height: 1; }
+    .intel-vs-suffix { font-size: 18px; color: var(--muted); font-weight: 500; }
+
+    .intel-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+    .intel-block { display: flex; flex-direction: column; gap: 10px; }
+    .intel-block-title { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .trending-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .viral-reasons { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .viral-reasons li { font-size: 13px; color: var(--secondary); display: flex; gap: 8px; align-items: flex-start; }
+    .viral-reasons li::before { content: '→'; color: var(--blue); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+
+    .time-slots { display: flex; flex-direction: column; gap: 8px; }
+    .time-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .time-zone { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; min-width: 36px; }
+    .time-val  { font-size: 14px; color: var(--white); font-weight: 600; }
+
+    /* ════════════════════════
+       SCREEN 4 — RESULT
+    ════════════════════════ */
+    .posts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px; }
+    .post-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-xl); padding: 28px;
+      display: flex; flex-direction: column; gap: 18px;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .post-card.winner { border-color: var(--blue); box-shadow: 0 0 0 1px rgba(91,99,235,0.3), 0 8px 32px rgba(91,99,235,0.15); }
+    .pc-header  { display: flex; align-items: center; justify-content: space-between; }
+    .pc-meta    { display: flex; align-items: center; gap: 8px; }
+    .wc-lbl     { font-size: 12px; color: var(--muted); font-weight: 500; }
+    .post-body  { font-size: 14px; line-height: 1.8; color: var(--secondary); white-space: pre-wrap; word-break: break-word; flex: 1; }
+    .hashtags   { display: flex; flex-wrap: wrap; gap: 6px; }
+    .hashtag    { font-size: 12px; color: var(--blue); font-weight: 600; }
+    .pc-actions { display: flex; gap: 10px; }
+    .pc-actions .btn { flex: 1; }
+
+    /* Stats Form */
+    .stats-form { display: none; flex-direction: column; gap: 16px; padding-top: 20px; border-top: 1px solid var(--border); }
+    .stats-form.vis { display: flex; }
+    .stats-lbl  { font-size: 12px; font-weight: 700; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.07em; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .stats-field { display: flex; flex-direction: column; gap: 6px; }
+    .stats-field label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stats-input {
+      background: rgba(255,255,255,0.05); border: 1.5px solid var(--border);
+      border-radius: var(--r-md); padding: 10px 14px;
+      color: var(--white); font-size: 15px; font-family: 'Inter', sans-serif;
+      outline: none; width: 100%; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .stats-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(91,99,235,0.2); }
+    .stats-input::placeholder { color: var(--muted); }
+    .score-reveal { display: none; align-items: center; justify-content: space-between; padding: 16px 20px; background: rgba(233,30,140,0.07); border: 1px solid rgba(233,30,140,0.2); border-radius: var(--r-md); }
+    .score-reveal.vis { display: flex; }
+    .score-reveal-lbl { font-size: 14px; color: var(--secondary); font-weight: 500; }
+    .score-reveal-num { font-size: 32px; font-weight: 800; color: var(--pink); }
+
+    /* ════════════════════════
+       SCREEN 5 — A/B RESULTS
+    ════════════════════════ */
+    .insight-bar { display: flex; align-items: flex-start; gap: 16px; padding: 20px 24px; background: rgba(91,99,235,0.07); border: 1px solid rgba(91,99,235,0.22); border-radius: var(--r-lg); margin-bottom: 28px; }
+    .insight-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+    .insight-msg  { font-size: 15px; color: var(--white); font-weight: 500; line-height: 1.6; }
+    .insight-msg strong { color: var(--pink); }
+    .ab-score-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 28px; }
+    .ab-score-pill { display: flex; align-items: center; gap: 10px; padding: 10px 18px; border-radius: var(--r-md); }
+    .pink-pill { background: rgba(233,30,140,0.08); border: 1px solid rgba(233,30,140,0.2); }
+    .blue-pill { background: rgba(91,99,235,0.08);  border: 1px solid rgba(91,99,235,0.2);  }
+    .tie-pill  { background: rgba(255,255,255,0.04); border: 1px solid var(--border); }
+    .ab-pill-count { font-size: 22px; font-weight: 800; color: var(--white); }
+    .ab-pill-lbl   { font-size: 13px; color: var(--secondary); }
+
+    /* ════════════════════════
+       SCREEN 6 — HISTORY
+    ════════════════════════ */
+    .history-row { cursor: pointer; }
+    .history-row:hover td { background: rgba(91,99,235,0.06); }
+    .history-expand { display: none; background: rgba(255,255,255,0.025); }
+    .history-expand.vis { display: table-row; }
+    .history-expand td { padding: 20px 24px; border-bottom: 1px solid var(--border); }
+    .hexp-headline { font-size: 16px; font-weight: 700; color: #3B9EFF; margin-bottom: 12px; }
+    .history-expand .version-b .hexp-headline { color: #4ADE80; }
+    .hexp-body { font-size: 13px; line-height: 1.75; color: var(--secondary); white-space: pre-wrap; word-break: break-word; margin-bottom: 14px; }
+    .hexp-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+    .hexp-stats { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+    .hexp-stats span { font-weight: 600; color: var(--secondary); }
+    .hexp-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .hexp-actions .btn { font-size: 13px; padding: 8px 16px; }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 900px) {
+      .intel-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 768px) {
+      .navbar { padding: 0 16px; }
+      .wrap   { padding: 0 16px; }
+      .screen { padding: 32px 0 72px; }
+      .page-title { font-size: 28px; }
+      .dash-top { flex-direction: column; }
+      .posts-grid { grid-template-columns: 1fr; }
+      .mode-grid  { grid-template-columns: 1fr; }
+      .form-row   { grid-template-columns: 1fr; }
+      .intel-grid { grid-template-columns: 1fr; }
+      .intel-top  { flex-direction: column; }
+      .intel-vs-wrap { align-items: flex-start; flex-direction: row; align-items: center; gap: 10px; }
+      .nav-btn { padding: 7px 10px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAVBAR ── -->
+<nav class="navbar">
+  <a class="nav-logo" href="#dashboard" onclick="go('dashboard');return false;">Post<span>Gen</span></a>
+  <div class="nav-links">
+    <a class="nav-btn active" id="nav-dashboard" href="#dashboard" onclick="go('dashboard');return false;">📊 Dashboard</a>
+    <a class="nav-btn"        id="nav-generator" href="#generator" onclick="go('generator');return false;">✨ Generator</a>
+    <a class="nav-btn"        id="nav-ab"        href="#ab"        onclick="go('ab');return false;">📈 A/B Results</a>
+    <a class="nav-btn"        id="nav-history"   href="#history"   onclick="go('history');return false;">📋 History</a>
+  </div>
+</nav>
+
+
+<!-- ══════════════════════════════════════
+     SCREEN 1 — DASHBOARD
+══════════════════════════════════════ -->
+<div id="screen-dashboard" class="screen active">
+  <div class="wrap">
+    <div class="dash-top">
+      <div class="theme-block">
+        <span class="theme-day-lbl">Today's Theme</span>
+        <div class="theme-heading" id="dash-theme-name">Data</div>
+        <span class="badge badge-blue" id="dash-theme-badge" style="margin-top:4px"></span>
+      </div>
+      <div class="streak-box">
+        <div class="streak-fire">🔥</div>
+        <div>
+          <div class="streak-num" id="streak-val">0</div>
+          <div class="streak-lbl">day streak</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-lg" onclick="go('generator')" style="margin-bottom:24px">
+      ✨ Generate Today's Post
+    </button>
+
+    <div id="ab-winner-banner" class="ab-winner-banner" style="display:none"></div>
+
+    <hr />
+    <div class="section-label">Last 10 Posts</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Topic</th><th>Theme</th><th>Ver.</th>
+            <th>Likes</th><th>Comments</th><th>Shares</th><th>Saves</th><th>Score</th>
+          </tr>
+        </thead>
+        <tbody id="dash-tbody"></tbody>
+      </table>
+      <div id="dash-empty" class="empty-state" style="display:none">
+        <div class="empty-icon">📭</div>
+        <p>No posts yet. Hit <strong>Generate Today's Post</strong> to get started.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     SCREEN 2 — GENERATOR
+══════════════════════════════════════ -->
+<div id="screen-generator" class="screen">
+  <div class="wrap">
+
+    <div style="margin-bottom:32px">
+      <h1 class="page-title">Generate Your <em>Post</em></h1>
+      <p class="page-sub">Two battle-tested formats. Real AI. Zero blank-page anxiety.</p>
+    </div>
+
+    <!-- Theme banner -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px">
+      <span class="badge badge-blue" id="gen-theme-badge"></span>
+      <span style="font-size:14px;color:var(--muted)">Today's theme is shaping your content</span>
+    </div>
+
+    <!-- Mode toggle -->
+    <div class="mode-grid">
+      <button class="mode-btn sel" id="btn-ai" onclick="setMode('ai')">
+        <span class="m-icon">🤖</span>
+        <span class="m-title">Let AI Pick the Topic</span>
+        <span class="m-sub">AI researches the most viral idea for today's theme</span>
+      </button>
+      <button class="mode-btn" id="btn-manual" onclick="setMode('manual')">
+        <span class="m-icon">✍️</span>
+        <span class="m-title">I'll Enter My Own Topic</span>
+        <span class="m-sub">Type any topic you want to write about</span>
+      </button>
+    </div>
+
+    <!-- Generator form -->
+    <div class="gen-form">
+
+      <!-- Manual topic (visible in manual mode) -->
+      <div id="manual-group" class="form-group">
+        <label class="form-label">Your Topic</label>
+        <input id="manual-input" type="text" class="form-input"
+               placeholder="e.g. Why most CFOs avoid AI until it's too late"
+               oninput="checkGenBtn()" />
+      </div>
+
+      <!-- Tone + Audience + Region -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Tone</label>
+          <select id="tone-sel" class="form-select">
+            <option value="authoritative and data-driven">Professional &amp; Data-Driven</option>
+            <option value="bold, direct and unapologetic">Bold &amp; Direct</option>
+            <option value="provocative and controversial">Provocative</option>
+            <option value="warm, conversational and human">Conversational</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Audience</label>
+          <select id="aud-sel" class="form-select">
+            <option value="CEOs, CFOs, and Founders">All Leaders</option>
+            <option value="CEOs">CEOs</option>
+            <option value="CFOs">CFOs</option>
+            <option value="Founders">Founders</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Region</label>
+          <select id="reg-sel" class="form-select">
+            <option value="India, Europe, and the US">All Regions</option>
+            <option value="India">India</option>
+            <option value="Europe">Europe</option>
+            <option value="the US">United States</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ── API Settings ── -->
+      <div class="section-divider">AI Provider &amp; API Key</div>
+
+      <div class="form-group">
+        <label class="form-label">Provider</label>
+        <div class="provider-row">
+          <button class="prov-btn sel" id="prov-anthropic" onclick="setProvider('anthropic')">
+            <span class="prov-dot dot-purple"></span> Anthropic
+          </button>
+          <button class="prov-btn" id="prov-openai" onclick="setProvider('openai')">
+            <span class="prov-dot dot-green"></span> OpenAI
+          </button>
+          <button class="prov-btn" id="prov-gemini" onclick="setProvider('gemini')">
+            <span class="prov-dot dot-blue"></span> Gemini
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">API Key</label>
+        <div class="key-wrap">
+          <input id="api-key-input" type="password" class="form-input"
+                 placeholder="Paste your API key here…"
+                 oninput="saveKey()" />
+          <button class="key-toggle" id="key-toggle" onclick="toggleKey()" title="Show / hide key">👁</button>
+        </div>
+      </div>
+
+      <!-- Error banner -->
+      <div class="api-error" id="api-error">
+        <span class="api-error-icon">⚠️</span>
+        <span id="api-error-msg">Please enter a valid API key to continue.</span>
+      </div>
+
+      <!-- Generate CTA -->
+      <button id="gen-btn" class="btn btn-primary btn-lg btn-full" onclick="startGen()" style="margin-top:4px">
+        ⚡ Generate 2 Versions
+      </button>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     SCREEN 3 — LOADING
+══════════════════════════════════════ -->
+<div id="screen-loading" class="screen">
+  <div class="wrap">
+    <div class="load-inner">
+      <div class="spinner"></div>
+      <div class="load-title">Researching and writing your posts…</div>
+      <div class="load-provider-lbl" id="load-provider-lbl">via Anthropic Claude</div>
+      <div class="load-sub">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span style="margin-left:6px">Crafting Version A &amp; B for your audience</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     SCREEN 4 — RESULT
+══════════════════════════════════════ -->
+<div id="screen-result" class="screen">
+  <div class="wrap">
+
+    <div>
+      <h1 class="page-title">Your <em>2 Versions</em></h1>
+      <p class="page-sub">Copy the one you want to post — then log your results below.</p>
+    </div>
+
+    <!-- Post Intelligence Card -->
+    <div class="intel-card" id="intel-card">
+      <div class="intel-top">
+        <div>
+          <div class="intel-block-title" style="margin-bottom:8px">📌 Topic</div>
+          <div class="intel-topic" id="intel-topic-text">—</div>
+        </div>
+        <div class="intel-vs-wrap">
+          <div class="intel-vs-label">Viral Score</div>
+          <div>
+            <span class="intel-vs-num" id="intel-vs-num">—</span>
+            <span class="intel-vs-suffix">/10</span>
+          </div>
+        </div>
+      </div>
+      <div class="intel-grid">
+        <div class="intel-block">
+          <div class="intel-block-title">📡 Trending On</div>
+          <div class="trending-tags" id="intel-trending"></div>
+        </div>
+        <div class="intel-block">
+          <div class="intel-block-title">💡 Why It'll Go Viral</div>
+          <ul class="viral-reasons" id="intel-reasons"></ul>
+        </div>
+        <div class="intel-block">
+          <div class="intel-block-title">⏰ Best Time to Post</div>
+          <div class="time-slots" id="intel-times"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- A / B Post Cards -->
+    <p class="ab-explainer">Both posts are on the <strong>same topic</strong> — written in two completely different formats. Post one, track results, and see which your audience prefers.</p>
+    <div class="posts-grid">
+
+      <!-- VERSION A -->
+      <div class="post-card" id="card-a">
+        <div class="pc-header">
+          <div class="pc-meta">
+            <span class="badge badge-pink">Version A</span>
+            <span class="wc-lbl" id="wc-a"></span>
+          </div>
+          <span class="badge badge-blue" id="result-theme-a"></span>
+        </div>
+        <div class="version-desc">📊 Data Hook + Numbered List — <em>same topic, different format</em></div>
+        <div class="headline-block headline-block-a" id="hblock-a">
+          <div class="headline-label">📰 Headline</div>
+          <div class="post-headline post-headline-a" id="headline-a"></div>
+        </div>
+        <div class="post-body" id="text-a"></div>
+        <div class="hashtags" id="tags-a"></div>
+        <div class="pc-actions">
+          <button class="btn btn-outline" onclick="copyPost('a')">📋 Copy</button>
+          <button class="btn btn-pink"    onclick="showStats('a')">✅ I Posted This</button>
+        </div>
+        <div class="stats-form" id="sf-a">
+          <div class="stats-lbl">Log Your Results</div>
+          <div class="stats-grid">
+            <div class="stats-field"><label>👍 Likes</label>    <input type="number" class="stats-input" id="likes-a"    placeholder="0" min="0" /></div>
+            <div class="stats-field"><label>💬 Comments</label> <input type="number" class="stats-input" id="comments-a" placeholder="0" min="0" /></div>
+            <div class="stats-field"><label>🔁 Shares</label>   <input type="number" class="stats-input" id="shares-a"   placeholder="0" min="0" /></div>
+            <div class="stats-field"><label>🔖 Saves</label>    <input type="number" class="stats-input" id="saves-a"    placeholder="0" min="0" /></div>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="saveStats('a')">Save My Results</button>
+          <div class="score-reveal" id="score-box-a">
+            <span class="score-reveal-lbl">🚀 Viral Score</span>
+            <span class="score-reveal-num" id="score-a">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- VERSION B -->
+      <div class="post-card" id="card-b">
+        <div class="pc-header">
+          <div class="pc-meta">
+            <span class="badge badge-blue">Version B</span>
+            <span class="wc-lbl" id="wc-b"></span>
+          </div>
+          <span class="badge badge-blue" id="result-theme-b" style="opacity:.6"></span>
+        </div>
+        <div class="version-desc">💡 Contrarian Hook + Arrow Points — <em>same topic, different angle</em></div>
+        <div class="headline-block headline-block-b" id="hblock-b">
+          <div class="headline-label">📰 Headline</div>
+          <div class="post-headline post-headline-b" id="headline-b"></div>
+        </div>
+        <div class="post-body" id="text-b"></div>
+        <div class="hashtags" id="tags-b"></div>
+        <div class="pc-actions">
+          <button class="btn btn-outline" onclick="copyPost('b')">📋 Copy</button>
+          <button class="btn btn-pink"    onclick="showStats('b')">✅ I Posted This</button>
+        </div>
+        <div class="stats-form" id="sf-b">
+          <div class="stats-lbl">Log Your Results</div>
+          <div class="stats-grid">
+            <div class="stats-field"><label>👍 Likes</label>    <input type="number" class="stats-input" id="likes-b"    placeholder="0" min="0" /></div>
+            <div class="stats-field"><label>💬 Comments</label> <input type="number" class="stats-input" id="comments-b" placeholder="0" min="0" /></div>
+            <div class="stats-field"><label>🔁 Shares</label>   <input type="number" class="stats-input" id="shares-b"   placeholder="0" min="0" /></div>
+            <div class="stats-field"><label>🔖 Saves</label>    <input type="number" class="stats-input" id="saves-b"    placeholder="0" min="0" /></div>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="saveStats('b')">Save My Results</button>
+          <div class="score-reveal" id="score-box-b">
+            <span class="score-reveal-lbl">🚀 Viral Score</span>
+            <span class="score-reveal-num" id="score-b">—</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /posts-grid -->
+
+    <div class="result-actions">
+      <button class="btn btn-outline result-action-btn" onclick="go('generator')">← Generate Another</button>
+      <button class="btn btn-outline result-action-btn" onclick="go('dashboard')">📊 Dashboard</button>
+      <button class="btn btn-outline result-action-btn" onclick="go('ab')">📈 A/B Results</button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     SCREEN 5 — A/B RESULTS
+══════════════════════════════════════ -->
+<div id="screen-ab" class="screen">
+  <div class="wrap">
+    <div style="margin-bottom:32px">
+      <h1 class="page-title">A/B <em>Results</em></h1>
+      <p class="page-sub">Track every post. Learn which format wins for your audience.</p>
+    </div>
+    <div class="insight-bar">
+      <div class="insight-icon">💡</div>
+      <div class="insight-msg" id="insight-msg">Log results on your posts to see which version performs better.</div>
+    </div>
+    <div class="ab-score-row" id="ab-tally"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Topic</th><th>Theme</th><th>Ver.</th>
+            <th>Likes</th><th>Comments</th><th>Shares</th><th>Saves</th>
+            <th>Score</th><th>Winner</th>
+          </tr>
+        </thead>
+        <tbody id="ab-tbody"></tbody>
+      </table>
+      <div id="ab-empty" class="empty-state">
+        <div class="empty-icon">📈</div>
+        <p>No results logged yet. Post a version and tap <strong>I Posted This</strong> to start tracking.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 6 — HISTORY
+══════════════════════════════════════ -->
+<div id="screen-history" class="screen">
+  <div class="wrap">
+    <div style="margin-bottom:32px">
+      <h1 class="page-title">Post <em>History</em></h1>
+      <p class="page-sub">Every post you've generated. Click any row to expand the full text.</p>
+    </div>
+    <div class="table-wrap">
+      <table id="history-table">
+        <thead>
+          <tr>
+            <th>Date</th><th>Topic</th><th>Theme</th><th>Ver.</th>
+            <th>Words</th><th>Viral Score</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="history-tbody"></tbody>
+      </table>
+      <div id="history-empty" class="empty-state" style="display:none">
+        <div class="empty-icon">📭</div>
+        <p>No posts yet. Go to <strong>Generator</strong> to create your first post.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+
+<!-- ══════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════ -->
+<script>
+/* ─────────────────────────────────────
+   CONSTANTS
+───────────────────────────────────── */
+const THEMES = { 0:'Human', 1:'Mindset', 2:'Trend', 3:'Data', 4:'Story', 5:'Future', 6:'Myth-Bust' };
+const EMOJIS = { Human:'🤝', Mindset:'🧠', Trend:'📈', Data:'📊', Story:'📖', Future:'🚀', 'Myth-Bust':'💥' };
+const PROVIDER_LABELS = { anthropic: 'via Anthropic Claude', openai: 'via OpenAI GPT-4o', gemini: 'via Google Gemini' };
+
+/* ─────────────────────────────────────
+   STATE
+───────────────────────────────────── */
+let mode            = 'ai';
+let currentProvider = 'anthropic';
+let currentGen      = null;
+
+/* ─────────────────────────────────────
+   STORAGE
+───────────────────────────────────── */
+const getLog    = () => { try { return JSON.parse(localStorage.getItem('post_log') || '[]'); } catch { return []; } };
+const saveLog   = d => localStorage.setItem('post_log',  JSON.stringify(d));
+const getABLog  = () => { try { return JSON.parse(localStorage.getItem('ab_log')   || '[]'); } catch { return []; } };
+const saveABLog = d => localStorage.setItem('ab_log',    JSON.stringify(d));
+const getKey    = p => localStorage.getItem('api_key_' + p) || '';
+const setKey    = (p, v) => localStorage.setItem('api_key_' + p, v);
+
+/* ─────────────────────────────────────
+   UTILS
+───────────────────────────────────── */
+const todayTheme = () => THEMES[new Date().getDay()];
+const todayStr   = () => new Date().toISOString().split('T')[0];
+const fmtDate    = s  => new Date(s + 'T00:00:00').toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+const countWords = t  => t.trim().split(/\s+/).filter(w => w).length;
+// Remove lines that are ONLY hashtags (e.g. "#AI #Tech #Leadership") from post body
+function stripHashtagLines(text) {
+  return text.split('\n')
+    .filter(line => !line.trim().match(/^(#\w+\s*)+$/))
+    .join('\n')
+    .trim();
+}
+const viralScore = (l,c,s,sv) => (l*1) + (c*3) + (s*4) + (sv*5);
+const esc        = s  => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function getStreak() {
+  const log = getLog();
+  if (!log.length) return 0;
+  const dates = [...new Set(log.map(p => p.date))].sort().reverse();
+  const today = todayStr();
+  const yest  = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  if (dates[0] !== today && dates[0] !== yest) return 0;
+  let s = 1;
+  for (let i = 1; i < dates.length; i++) {
+    if ((new Date(dates[i-1]) - new Date(dates[i])) / 86400000 === 1) s++; else break;
+  }
+  return s;
+}
+
+function showToast(msg, dur = 2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+function showApiError(msg) {
+  const el  = document.getElementById('api-error');
+  const txt = document.getElementById('api-error-msg');
+  txt.textContent = msg;
+  el.classList.add('vis');
+  el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function clearApiError() {
+  document.getElementById('api-error').classList.remove('vis');
+}
+
+/* ─────────────────────────────────────
+   SCREEN NAVIGATION
+───────────────────────────────────── */
+function go(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  const nb = document.getElementById('nav-' + name);
+  if (nb) nb.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (history.pushState) history.pushState(null, '', '#' + name);
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'generator') renderGenerator();
+  if (name === 'ab')        renderAB();
+  if (name === 'history')   renderHistory();
+}
+
+
+/* ─────────────────────────────────────
+   SCREEN 1 — DASHBOARD
+───────────────────────────────────── */
+function renderDashboard() {
+  const theme = todayTheme();
+  document.getElementById('dash-theme-name').innerHTML = `<em>${theme}</em>`;
+  document.getElementById('dash-theme-badge').textContent = (EMOJIS[theme]||'') + ' ' + theme;
+  document.getElementById('streak-val').textContent = getStreak();
+
+  // A/B winner banner
+  const ab = getABLog();
+  const pairs = {};
+  ab.forEach(e => { if (!pairs[e.pairId]) pairs[e.pairId] = {}; pairs[e.pairId][e.version] = e; });
+  const complete = Object.values(pairs).filter(p => p.A && p.B);
+  const banner = document.getElementById('ab-winner-banner');
+  if (complete.length >= 7) {
+    let aWins = 0, bWins = 0;
+    complete.forEach(p => { if (p.A.score > p.B.score) aWins++; else if (p.B.score > p.A.score) bWins++; });
+    let html, cls;
+    if (aWins > bWins) {
+      html = `<strong>📊 A/B Verdict (${complete.length} posts):</strong> Version A wins ${aWins}/${complete.length} matchups — the stat-hook format outperforms B. <a onclick="go('ab')" style="cursor:pointer;text-decoration:underline">See full results →</a>`;
+      cls = 'ab-winner-pink';
+    } else if (bWins > aWins) {
+      html = `<strong>📊 A/B Verdict (${complete.length} posts):</strong> Version B wins ${bWins}/${complete.length} matchups — contrarian "Unpopular opinion" format dominates. <a onclick="go('ab')" style="cursor:pointer;text-decoration:underline">See full results →</a>`;
+      cls = 'ab-winner-blue';
+    } else {
+      html = `<strong>📊 A/B Verdict (${complete.length} posts):</strong> Dead heat — A and B are tied. Keep posting to break the tie. <a onclick="go('ab')" style="cursor:pointer;text-decoration:underline">See full results →</a>`;
+      cls = 'ab-winner-tie';
+    }
+    banner.innerHTML = html;
+    banner.className = 'ab-winner-banner ' + cls;
+    banner.style.display = '';
+  } else if (complete.length > 0) {
+    banner.innerHTML = `📊 <strong>${complete.length} of 7</strong> A/B matchups logged — keep posting to reveal your winning format.`;
+    banner.className = 'ab-winner-banner ab-winner-progress';
+    banner.style.display = '';
+  } else {
+    banner.style.display = 'none';
+  }
+
+  const log = getLog();
+  const tbody = document.getElementById('dash-tbody');
+  const empty = document.getElementById('dash-empty');
+  const recent = [...log].reverse().slice(0, 10);
+
+  if (!recent.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = recent.map(p => {
+    const sc = p.metrics ? viralScore(p.metrics.likes, p.metrics.comments, p.metrics.shares, p.metrics.saves) : '—';
+    const vb = p.version === 'A' ? '<span class="badge badge-pink">A</span>' : '<span class="badge badge-blue">B</span>';
+    return `<tr>
+      <td>${fmtDate(p.date)}</td>
+      <td class="topic-cell">${esc(p.topic)}</td>
+      <td><span class="badge badge-blue" style="font-size:10px">${EMOJIS[p.theme]||''} ${p.theme}</span></td>
+      <td>${vb}</td>
+      <td>${p.metrics ? p.metrics.likes    : '—'}</td>
+      <td>${p.metrics ? p.metrics.comments : '—'}</td>
+      <td>${p.metrics ? p.metrics.shares   : '—'}</td>
+      <td>${p.metrics ? p.metrics.saves    : '—'}</td>
+      <td class="score-val">${sc}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ─────────────────────────────────────
+   SCREEN 2 — GENERATOR UI
+───────────────────────────────────── */
+function renderGenerator() {
+  const theme = todayTheme();
+  document.getElementById('gen-theme-badge').textContent = (EMOJIS[theme]||'') + ' Today: ' + theme;
+  // Restore saved key for active provider
+  document.getElementById('api-key-input').value = getKey(currentProvider);
+  clearApiError();
+  checkGenBtn();
+}
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn-ai').classList.toggle('sel',     m === 'ai');
+  document.getElementById('btn-manual').classList.toggle('sel', m === 'manual');
+  const mg = document.getElementById('manual-group');
+  if (m === 'manual') { mg.classList.add('vis'); document.getElementById('manual-input').focus(); }
+  else                  mg.classList.remove('vis');
+  checkGenBtn();
+}
+
+function checkGenBtn() {
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = mode === 'manual' && document.getElementById('manual-input').value.trim().length < 3;
+}
+
+function setProvider(p) {
+  currentProvider = p;
+  ['anthropic','openai','gemini'].forEach(id => {
+    document.getElementById('prov-' + id).classList.toggle('sel', id === p);
+  });
+  // Load saved key for this provider
+  document.getElementById('api-key-input').value = getKey(p);
+  clearApiError();
+}
+
+function saveKey() {
+  setKey(currentProvider, document.getElementById('api-key-input').value.trim());
+  clearApiError();
+}
+
+function toggleKey() {
+  const inp = document.getElementById('api-key-input');
+  const btn = document.getElementById('key-toggle');
+  if (inp.type === 'password') { inp.type = 'text';     btn.textContent = '🙈'; }
+  else                         { inp.type = 'password'; btn.textContent = '👁';  }
+}
+
+/* ─────────────────────────────────────
+   PROMPT BUILDERS — Two-call approach
+   Call 1: Research trending topic
+   Call 2: Write the posts
+───────────────────────────────────── */
+
+/* ── Topic variety helpers ── */
+function getRecentTopics() {
+  return getLog()
+    .filter(e => e.version === 'A')
+    .sort((a, b) => b.pairId - a.pairId)
+    .slice(0, 5)
+    .map(e => e.topic)
+    .filter(Boolean);
+}
+
+/* ── Hook format rotation helpers ── */
+const HOOK_FORMATS = {
+  1: `Hook Format 1 — The Shocking Number:\n"[Company] just saved $[X]M using [specific tool].\nHere is exactly how they did it."`,
+  2: `Hook Format 2 — The Contrarian Take:\n"Everyone is investing in [X].\nThe data says that is a mistake."`,
+  3: `Hook Format 3 — The Breaking News Angle:\n"[Company/Person] just announced [thing].\nMost people missed what this really means."`,
+  4: `Hook Format 4 — The Uncomfortable Truth:\n"[X]% of [audience] will face [consequence]\nby [specific date]. Most boards are not ready."`,
+  5: `Hook Format 5 — The Underdog Story:\n"A [small company/startup] in [place] just\n[achievement] that [big company] spent\n$[X]M trying to do. Here is what happened."`,
+  6: `Hook Format 6 — The Debate Starter:\n"[Person/Company] said [bold statement].\n[Industry] is furious. Here is why they\nmight actually be right."`
+};
+
+function getLastHookFormat() {
+  return parseInt(localStorage.getItem('last_hook_format') || '0', 10);
+}
+
+function saveHookFormat(num) {
+  localStorage.setItem('last_hook_format', num.toString());
+}
+
+function pickHookFormat() {
+  const last = getLastHookFormat();
+  const available = [1,2,3,4,5,6].filter(n => n !== last);
+  return available[Math.floor(Math.random() * available.length)];
+}
+
+/* CALL 1 — Research: find the hottest trending topic */
+function buildResearchPrompt(recentTopics) {
+  const avoidSection = recentTopics && recentTopics.length > 0
+    ? `\nAVOID these topics already covered recently:\n${recentTopics.map((t,i) => `${i+1}. ${t}`).join('\n')}\nPick something completely different.\n`
+    : '';
+
+  return `STEP 1 — RESEARCH FIRST (mandatory):
+Before writing anything, scan these sources mentally for what is HOT right now in 2026:
+
+REDDIT: r/technology, r/artificial, r/ChatGPT, r/startups, r/Entrepreneur, r/MachineLearning, r/business, r/investing, r/ProductManagement
+
+TWITTER/X: trending topics in tech and business, what are VCs and founders talking about today, viral threads from last 48 hours
+
+LINKEDIN: what posts are getting 1000+ comments, what topics are founders debating this week
+
+PRODUCT HUNT: top products launched this week, what new AI tools are getting buzz
+
+TECH NEWS: TechCrunch, Wired, MIT Tech Review, The Information — biggest story of the week
+
+BUSINESS NEWS: WSJ, Bloomberg, FT — any major business decision or company news involving AI, automation, or tech disruption
+
+WHAT TO LOOK FOR:
+→ New product launch causing controversy
+→ A company saving millions using AI
+→ A CEO making a bold public statement
+→ A study or report with shocking numbers
+→ A startup disrupting a traditional industry
+→ A regulation or law affecting businesses
+→ A viral debate between tech leaders
+→ A layoff or hiring surge linked to AI
+→ A new use case nobody is talking about yet
+→ Any underdog story with business impact
+
+STEP 2 — TOPIC SELECTION RULES:
+Pick the ONE topic that scores highest on ALL of:
+✅ Happened in last 7 days — not old news
+✅ Has a shocking angle — surprises a CEO/CFO
+✅ Not just AI in general — must be SPECIFIC
+✅ Has real numbers — revenue, users, percentage
+✅ Would spark debate — people will disagree
+✅ NOT covered to death on LinkedIn already
+✅ Relevant to India, Europe, OR US market
+
+STEP 3 — TOPIC VARIETY RULE:
+Never pick topics only about:
+❌ AI impact on CEO careers (too generic)
+❌ Future of work in general (overdone)
+❌ AI replacing jobs (everyone writes this)
+
+Always consider these fresh angles:
+✅ Specific new product launch and its impact
+✅ A company's actual ROI from AI (with numbers)
+✅ A regulatory change affecting businesses
+✅ A founder's contrarian public opinion
+✅ A use case from an unexpected industry
+✅ A viral Reddit or Twitter debate translated for LinkedIn business audience
+✅ A new research finding with shocking stat
+✅ A startup that just raised or just failed
+✅ Cost savings story with specific numbers
+✅ A technology most leaders haven't heard of yet
+${avoidSection}
+STEP 4 — BEFORE WRITING CONFIRM:
+State the topic in one line.
+State which platform it is trending on.
+State the ONE shocking fact about it.
+
+Return ONLY this JSON (no markdown, no extra text):
+{
+  "topic": "specific topic name",
+  "why": "why it is viral right now",
+  "stat": "one shocking real statistic with source",
+  "platforms": "where it is trending"
+}`;
+}
+
+/* CALL 2 — Writing: generate both post versions */
+function buildWritingPrompt(topic, topicContext, theme, tone, audience, region, hookFormat) {
+  const topicLine = topicContext
+    ? `Topic to write about: ${topic}\n${topicContext}`
+    : `Topic to write about: ${topic}`;
+
+  const hookInstruction = hookFormat && HOOK_FORMATS[hookFormat]
+    ? `\nHOOK FORMAT TO USE FOR VERSION A:\n${HOOK_FORMATS[hookFormat]}\nAdapt this format exactly to the topic above. Do not use a different hook style.\n`
+    : '';
+
+  return `You are an elite LinkedIn ghostwriter.
+100,000 followers. Audience: ${audience} in ${region}.
+Theme: ${theme}. Year: 2026.
+${topicLine}
+${hookInstruction}
+CRITICAL INSTRUCTION BEFORE YOU WRITE:
+Target = 185 words per post.
+After writing each post, count every word.
+If under 180: add 2 more specific insight sentences.
+If over 190: remove least important sentence.
+Do NOT submit until word count is 180-190.
+
+━━━ VERSION A FORMAT ━━━
+
+[HEADLINE — max 10 words, makes CEO stop scrolling]
+
+[Hook — ONE line only. Follow the HOOK FORMAT specified above exactly.
+Never start with I. End with em dash thought.]
+
+[blank line]
+
+[2 sentence context. Why this matters in 2026.
+Include dollar figure or growth percentage.]
+
+[blank line]
+
+1. [Insight — TWO sentences. First: specific stat or fact. Second: why it matters to the reader.]
+
+2. [Insight — TWO sentences. First: specific stat or fact. Second: practical implication.]
+
+3. [Insight — TWO sentences. First: specific stat or fact. Second: what leaders must do now.]
+
+4. [Insight — TWO sentences. First: specific stat or fact. Second: the surprising consequence.]
+
+[blank line]
+
+[AHA MOMENT — one line. The thing people screenshot.
+Must challenge a belief CEOs currently hold.]
+
+[blank line]
+
+Agree or disagree? Drop your take below.
+
+[blank line]
+
+#Tag1 #Tag2 #Tag3
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━ VERSION B FORMAT ━━━
+
+[HEADLINE — different from A, max 10 words]
+
+Unpopular opinion: [bold contrarian statement
+that contradicts what most business leaders believe]
+
+[blank line]
+
+[2 sentence context with 2026 data point.
+Opposite angle from Version A entirely.]
+
+[blank line]
+
+→ [Insight — TWO sentences. First: specific stat or fact. Second: why it matters.]
+
+→ [Insight — TWO sentences. First: specific stat or fact. Second: practical implication.]
+
+→ [Insight — TWO sentences. First: specific stat or fact. Second: what leaders must do.]
+
+→ [Insight — TWO sentences. First: specific stat or fact. Second: the surprising consequence.]
+
+[blank line]
+
+[POWERFUL CLOSER — challenges mainstream belief.
+Make reader feel they know something others don't.]
+
+[blank line]
+
+Save this. Share it with your leadership team.
+This conversation needs to happen now.
+
+[blank line]
+
+#Tag1 #Tag2 #Tag3 #Tag4
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+BANNED WORDS — never use these:
+game-changer, synergy, leverage, delighted,
+thrilled, excited to share, fast-paced world,
+utilizing, transformative, groundbreaking,
+revolutionizing, landscape, ecosystem
+
+RESPONSE FORMAT — JSON only, no extra text:
+{
+  "topic": "topic name",
+  "trendingOn": "platforms",
+  "whyViral": ["reason1", "reason2", "reason3"],
+  "viralScore": 8,
+  "bestTimeIST": "8:00 AM",
+  "bestTimeEST": "9:30 PM",
+  "bestTimeGMT": "2:30 AM",
+  "versionA": {
+    "headline": "Viral headline here",
+    "post": "Full post with proper line breaks",
+    "wordCount": 185,
+    "hashtags": ["#AI", "#Leadership", "#CEO"]
+  },
+  "versionB": {
+    "headline": "Different viral headline",
+    "post": "Full post with proper line breaks",
+    "wordCount": 183,
+    "hashtags": ["#GenAI", "#Founders", "#FutureOfWork", "#Innovation"]
+  }
+}`;
+}
+
+/* ─────────────────────────────────────
+   API CALLS — all three providers
+   receive the exact same prompt
+───────────────────────────────────── */
+async function callAnthropicAPI(apiKey, prompt) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type':    'application/json',
+      'x-api-key':       apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model:      'claude-sonnet-4-6',
+      max_tokens: 4000,
+      messages:   [{ role: 'user', content: prompt }]
+    })
+  });
+  if (res.status === 401 || res.status === 403) throw new Error('auth');
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message || 'API error ' + res.status); }
+  const data = await res.json();
+  return data.content[0].text;
+}
+
+async function callOpenAIAPI(apiKey, prompt) {
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': 'Bearer ' + apiKey
+    },
+    body: JSON.stringify({
+      model:      'gpt-4o',
+      max_tokens: 4000,
+      messages:   [{ role: 'user', content: prompt }]
+    })
+  });
+  if (res.status === 401 || res.status === 403) throw new Error('auth');
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message || 'API error ' + res.status); }
+  const data = await res.json();
+  return data.choices[0].message.content;
+}
+
+async function callGeminiAPI(apiKey, prompt) {
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 4000 }
+    })
+  });
+  if (res.status === 400 || res.status === 403) throw new Error('auth');
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message || 'API error ' + res.status); }
+  const data = await res.json();
+  return data.candidates[0].content.parts[0].text;
+}
+
+/* Routes to correct provider — all three get the same prompt */
+async function callAPI(provider, apiKey, prompt) {
+  if (provider === 'anthropic') return callAnthropicAPI(apiKey, prompt);
+  if (provider === 'openai')    return callOpenAIAPI(apiKey, prompt);
+  if (provider === 'gemini')    return callGeminiAPI(apiKey, prompt);
+  throw new Error('Unknown provider');
+}
+
+/* Strip markdown code fences if model wraps in ```json ... ``` */
+function parseAIResponse(raw) {
+  let text = raw.trim();
+  if (text.startsWith('```')) {
+    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+  }
+  return JSON.parse(text);
+}
+
+/* ─────────────────────────────────────
+   MAIN GENERATION FLOW
+───────────────────────────────────── */
+async function startGen() {
+  clearApiError();
+
+  const apiKey = document.getElementById('api-key-input').value.trim();
+  if (!apiKey) {
+    showApiError('Please enter a valid API key to continue.');
+    return;
+  }
+
+  const theme    = todayTheme();
+  const tone     = document.getElementById('tone-sel').value;
+  const audience = document.getElementById('aud-sel').value;
+  const region   = document.getElementById('reg-sel').value;
+  const rawTopic = mode === 'manual' ? document.getElementById('manual-input').value.trim() : null;
+
+  // Show loading
+  document.getElementById('load-provider-lbl').textContent = PROVIDER_LABELS[currentProvider];
+  go('loading');
+
+  try {
+    let topic = rawTopic || null;
+    let topicContext = null;
+
+    // CALL 1 — Research (AI mode only): find the hottest trending topic
+    const recentTopics = getRecentTopics();
+    if (!rawTopic) {
+      try {
+        const researchPrompt = buildResearchPrompt(recentTopics);
+        const rawResearch = await callAPI(currentProvider, apiKey, researchPrompt);
+        const research = parseAIResponse(rawResearch);
+        topic = research.topic || 'the most viral AI or business topic trending in 2026';
+        topicContext = [
+          research.why   ? `Why it's viral: ${research.why}` : '',
+          research.stat  ? `Key stat: ${research.stat}`       : '',
+          research.platforms ? `Trending on: ${research.platforms}` : ''
+        ].filter(Boolean).join('\n');
+      } catch (e) {
+        // Research call failed — fall back to general instruction
+        topic = 'the most viral AI or business topic trending right now in 2026';
+        topicContext = null;
+      }
+    }
+
+    // Pick hook format (rotate, never repeat same format two days in a row)
+    const hookFormat = pickHookFormat();
+
+    // CALL 2 — Writing: generate both post versions using the researched topic
+    const writingPrompt = buildWritingPrompt(topic, topicContext, theme, tone, audience, region, hookFormat);
+    const rawText = await callAPI(currentProvider, apiKey, writingPrompt);
+    const parsed  = parseAIResponse(rawText);
+
+    // Validate required fields
+    if (!parsed.versionA?.post || !parsed.versionB?.post) throw new Error('Incomplete response from AI. Please try again.');
+
+    // Validate word count — retry up to 3 times until both posts reach 175+ words
+    let retries = 0;
+    while (retries < 3) {
+      const wcA = countWords(parsed.versionA.post);
+      const wcB = countWords(parsed.versionB.post);
+      if (wcA >= 175 && wcB >= 175) break;
+      const under = [];
+      if (wcA < 175) under.push(`Version A has only ${wcA} words. You MUST expand it to exactly 185 words. Add 2 more specific numbered insights with real statistics. Keep same format and CTA.`);
+      if (wcB < 175) under.push(`Version B has only ${wcB} words. You MUST expand it to exactly 185 words. Add 2 more specific arrow insights with real statistics. Keep same format and CTA.`);
+      const retryPrompt = `${under.join('\n')}\nReturn same JSON format with only versionA and versionB keys.\n\nCurrent JSON:\n${JSON.stringify({ versionA: parsed.versionA, versionB: parsed.versionB })}`;
+      try {
+        const rawRetry = await callAPI(currentProvider, apiKey, retryPrompt);
+        const retried  = parseAIResponse(rawRetry);
+        if (countWords(parsed.versionA.post) < 175 && retried.versionA?.post) parsed.versionA = retried.versionA;
+        if (countWords(parsed.versionB.post) < 175 && retried.versionB?.post) parsed.versionB = retried.versionB;
+      } catch (e) { break; }
+      retries++;
+    }
+
+    const pairId = Date.now().toString();
+    currentGen = { pairId, topic: parsed.topic, theme, audience, region, intelligence: parsed };
+
+    // Auto-save both posts to log
+    saveHookFormat(hookFormat);
+    const log = getLog();
+    log.push({ id: pairId+'_A', pairId, version:'A', date: todayStr(), topic: parsed.topic, theme,
+               headline: parsed.versionA.headline || '', hashtags: parsed.versionA.hashtags || [],
+               text: stripHashtagLines(parsed.versionA.post), hookFormat });
+    log.push({ id: pairId+'_B', pairId, version:'B', date: todayStr(), topic: parsed.topic, theme,
+               headline: parsed.versionB.headline || '', hashtags: parsed.versionB.hashtags || [],
+               text: stripHashtagLines(parsed.versionB.post), hookFormat });
+    saveLog(log);
+
+    renderResult(parsed, theme);
+    go('result');
+
+  } catch (err) {
+    go('generator');
+
+    let msg = err.message || 'Something went wrong. Please try again.';
+
+    if (msg === 'auth' || msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('unauthorized')) {
+      msg = 'Please enter a valid API key to continue.';
+    } else if (msg.toLowerCase().includes('failed to fetch') || msg.toLowerCase().includes('networkerror') || msg.toLowerCase().includes('cors')) {
+      msg = 'Network error. ' + (currentProvider === 'anthropic' ? 'Anthropic requires a server — serve this file via: python -m http.server 8080' : 'Check your internet connection and try again.');
+    } else if (msg.toLowerCase().includes('rate') || msg.includes('429')) {
+      msg = 'Rate limit reached. Please wait a moment and try again.';
+    } else if (msg.toLowerCase().includes('json') || msg.toLowerCase().includes('parse')) {
+      msg = 'AI returned an unexpected format. Please try again.';
+    }
+
+    showApiError(msg);
+  }
+}
+
+/* ─────────────────────────────────────
+   SCREEN 4 — RENDER RESULT
+───────────────────────────────────── */
+function renderResult(parsed, theme) {
+  const tLabel = (EMOJIS[theme]||'') + ' ' + theme;
+  document.getElementById('result-theme-a').textContent = tLabel;
+  document.getElementById('result-theme-b').textContent = tLabel;
+
+  // Reset stats forms FIRST (was clearing headlines after setting them — bug fixed)
+  ['a','b'].forEach(v => {
+    document.getElementById('sf-'+v).classList.remove('vis');
+    document.getElementById('score-box-'+v).classList.remove('vis');
+    document.getElementById('score-'+v).textContent = '—';
+    document.getElementById('card-'+v).classList.remove('winner');
+    ['likes','comments','shares','saves'].forEach(f => document.getElementById(f+'-'+v).value = '');
+  });
+
+  // Version A — strip hashtag lines from post body; show hashtags separately
+  const hlA   = (parsed.versionA.headline || '').trim();
+  const bodyA = stripHashtagLines(parsed.versionA.post);
+  document.getElementById('headline-a').textContent = hlA;
+  document.getElementById('hblock-a').style.display = hlA ? '' : 'none';
+  document.getElementById('text-a').textContent     = bodyA;
+  document.getElementById('wc-a').textContent       = countWords(bodyA) + ' words';
+  renderTags('tags-a', parsed.versionA.hashtags || []);
+
+  // Version B — strip hashtag lines from post body; show hashtags separately
+  const hlB   = (parsed.versionB.headline || '').trim();
+  const bodyB = stripHashtagLines(parsed.versionB.post);
+  document.getElementById('headline-b').textContent = hlB;
+  document.getElementById('hblock-b').style.display = hlB ? '' : 'none';
+  document.getElementById('text-b').textContent     = bodyB;
+  document.getElementById('wc-b').textContent       = countWords(bodyB) + ' words';
+  renderTags('tags-b', parsed.versionB.hashtags || []);
+
+  // Intelligence card
+  renderIntelCard(parsed);
+}
+
+function renderIntelCard(parsed) {
+  const card = document.getElementById('intel-card');
+  card.classList.add('vis');
+
+  // Topic
+  document.getElementById('intel-topic-text').textContent = parsed.topic || '—';
+
+  // Viral score
+  document.getElementById('intel-vs-num').textContent = parsed.viralScore ?? '—';
+
+  // Trending on — split "Reddit, X/Twitter, HackerNews" into tags
+  const trendEl = document.getElementById('intel-trending');
+  const platforms = (parsed.trendingOn || '').split(',').map(s => s.trim()).filter(Boolean);
+  trendEl.innerHTML = platforms.map(p => `<span class="badge badge-muted">${esc(p)}</span>`).join('');
+
+  // Why viral reasons
+  const reasonsEl = document.getElementById('intel-reasons');
+  const reasons   = Array.isArray(parsed.whyViral) ? parsed.whyViral : [];
+  reasonsEl.innerHTML = reasons.map(r => `<li>${esc(r)}</li>`).join('');
+
+  // Best times
+  const timesEl = document.getElementById('intel-times');
+  timesEl.innerHTML = [
+    ['IST', parsed.bestTimeIST],
+    ['EST', parsed.bestTimeEST],
+    ['GMT', parsed.bestTimeGMT]
+  ].filter(([,v]) => v).map(([zone, val]) =>
+    `<div class="time-row"><span class="time-zone">${zone}</span><span class="time-val">${esc(val)}</span></div>`
+  ).join('');
+}
+
+function renderTags(id, tags) {
+  document.getElementById(id).innerHTML = (tags || []).map(t => `<span class="hashtag">${esc(t)}</span>`).join('');
+}
+
+function copyPost(v) {
+  const text = document.getElementById('text-'+v).textContent;
+  navigator.clipboard.writeText(text)
+    .then(() => showToast('✅ Version ' + v.toUpperCase() + ' copied to clipboard!'))
+    .catch(() => {
+      const ta = Object.assign(document.createElement('textarea'), { value: text });
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      showToast('✅ Version ' + v.toUpperCase() + ' copied!');
+    });
+}
+
+function showStats(v) {
+  const sf = document.getElementById('sf-'+v);
+  sf.classList.add('vis');
+  sf.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function saveStats(v) {
+  const l  = parseInt(document.getElementById('likes-'+v).value)    || 0;
+  const c  = parseInt(document.getElementById('comments-'+v).value) || 0;
+  const s  = parseInt(document.getElementById('shares-'+v).value)   || 0;
+  const sv = parseInt(document.getElementById('saves-'+v).value)    || 0;
+  const sc = viralScore(l, c, s, sv);
+
+  document.getElementById('score-'+v).textContent = sc;
+  document.getElementById('score-box-'+v).classList.add('vis');
+  highlightWinner();
+
+  if (!currentGen) return;
+  const pid = currentGen.pairId + '_' + v.toUpperCase();
+
+  // Update post_log
+  const log = getLog();
+  const ent = log.find(p => p.id === pid);
+  if (ent) { ent.metrics = { likes:l, comments:c, shares:s, saves:sv }; ent.viralScore = sc; saveLog(log); }
+
+  // Update ab_log
+  const ab  = getABLog();
+  const idx = ab.findIndex(e => e.id === pid);
+  const row = { id:pid, pairId:currentGen.pairId, date:todayStr(), topic:currentGen.topic, theme:currentGen.theme, version:v.toUpperCase(), likes:l, comments:c, shares:s, saves:sv, score:sc };
+  if (idx >= 0) ab[idx] = row; else ab.push(row);
+  saveABLog(ab);
+
+  showToast('📊 Saved! Viral Score: ' + sc);
+}
+
+function highlightWinner() {
+  const sa = document.getElementById('score-a').textContent;
+  const sb = document.getElementById('score-b').textContent;
+  if (sa === '—' || sb === '—') return;
+  const na = parseInt(sa), nb = parseInt(sb);
+  document.getElementById('card-a').classList.toggle('winner', na > nb);
+  document.getElementById('card-b').classList.toggle('winner', nb > na);
+}
+
+/* ─────────────────────────────────────
+   SCREEN 5 — A/B RESULTS
+───────────────────────────────────── */
+function renderAB() {
+  const ab    = getABLog();
+  const tbody = document.getElementById('ab-tbody');
+  const empty = document.getElementById('ab-empty');
+
+  const pairs = {};
+  ab.forEach(e => { if (!pairs[e.pairId]) pairs[e.pairId] = {}; pairs[e.pairId][e.version] = e; });
+
+  let aWins = 0, bWins = 0, ties = 0;
+  Object.values(pairs).forEach(p => {
+    if (p.A && p.B) {
+      if      (p.A.score > p.B.score) aWins++;
+      else if (p.B.score > p.A.score) bWins++;
+      else                             ties++;
+    }
+  });
+
+  const total = aWins + bWins + ties;
+  const msg   = document.getElementById('insight-msg');
+  if      (!total)        msg.innerHTML = 'Log results on your posts to see which version performs better.';
+  else if (aWins > bWins) msg.innerHTML = `<strong>Version A is winning</strong> — the stat-hook format outperforms B in ${aWins} of ${total} head-to-head matchups. Keep leading with data.`;
+  else if (bWins > aWins) msg.innerHTML = `<strong>Version B is winning</strong> — the "Unpopular opinion" contrarian format wins ${bWins} of ${total} matchups. Your audience loves bold takes.`;
+  else                    msg.innerHTML = `It's a <strong>dead heat</strong> — both versions win equally (${aWins} each out of ${total}). Keep testing to spot a pattern.`;
+
+  document.getElementById('ab-tally').innerHTML = total ? `
+    <div class="ab-score-pill pink-pill"><span class="badge badge-pink">A</span><span class="ab-pill-count">${aWins}</span><span class="ab-pill-lbl">wins</span></div>
+    <div class="ab-score-pill blue-pill"><span class="badge badge-blue">B</span><span class="ab-pill-count">${bWins}</span><span class="ab-pill-lbl">wins</span></div>
+    ${ties ? `<div class="ab-score-pill tie-pill"><span class="ab-pill-count">${ties}</span><span class="ab-pill-lbl">ties</span></div>` : ''}
+  ` : '';
+
+  if (!ab.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  const winMap = {};
+  Object.values(pairs).forEach(p => {
+    if (p.A && p.B) winMap[p.A.pairId] = p.A.score > p.B.score ? 'A' : p.B.score > p.A.score ? 'B' : 'tie';
+  });
+
+  tbody.innerHTML = [...ab].sort((a,b) => b.date.localeCompare(a.date)).map(e => {
+    const vb  = e.version === 'A' ? '<span class="badge badge-pink">A</span>' : '<span class="badge badge-blue">B</span>';
+    const win = winMap[e.pairId];
+    return `<tr>
+      <td>${fmtDate(e.date)}</td>
+      <td class="topic-cell">${esc(e.topic)}</td>
+      <td><span class="badge badge-blue" style="font-size:10px">${EMOJIS[e.theme]||''} ${e.theme}</span></td>
+      <td>${vb}</td>
+      <td>${e.likes}</td><td>${e.comments}</td><td>${e.shares}</td><td>${e.saves}</td>
+      <td class="score-val">${e.score}</td>
+      <td style="font-size:18px;text-align:center">${win ? (win === e.version ? '🏆' : '—') : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ─────────────────────────────────────
+   SCREEN 6 — HISTORY
+───────────────────────────────────── */
+function renderHistory() {
+  const log    = getLog().slice().reverse(); // most recent first
+  const tbody  = document.getElementById('history-tbody');
+  const empty  = document.getElementById('history-empty');
+
+  if (!log.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = log.map((p, idx) => {
+    const wc    = countWords(p.text || '');
+    const score = p.viralScore != null ? p.viralScore : (p.metrics ? viralScore(p.metrics.likes||0, p.metrics.comments||0, p.metrics.shares||0, p.metrics.saves||0) : '—');
+    const vBadge = p.version === 'A' ? '<span class="badge badge-pink">A</span>' : '<span class="badge badge-blue">B</span>';
+    const tags   = (p.hashtags || []).map(t => `<span class="hashtag">${esc(t)}</span>`).join('');
+    const stats  = p.metrics
+      ? `👍 <span>${p.metrics.likes||0}</span> &nbsp; 💬 <span>${p.metrics.comments||0}</span> &nbsp; 🔁 <span>${p.metrics.shares||0}</span> &nbsp; 🔖 <span>${p.metrics.saves||0}</span>`
+      : '<em style="color:var(--muted)">No stats logged</em>';
+
+    return `
+      <tr class="history-row" onclick="toggleHistoryRow(${idx})">
+        <td>${fmtDate(p.date)}</td>
+        <td class="topic-cell">${esc(p.topic || '—')}</td>
+        <td><span class="badge badge-blue" style="font-size:10px">${EMOJIS[p.theme]||''} ${p.theme||''}</span></td>
+        <td>${vBadge}</td>
+        <td>${wc}</td>
+        <td class="score-val">${score}</td>
+        <td><button class="btn btn-outline" style="padding:5px 10px;font-size:12px" onclick="event.stopPropagation();deleteHistoryEntry('${esc(p.id)}')">🗑️ Delete</button></td>
+      </tr>
+      <tr class="history-expand" id="hexp-${idx}">
+        <td colspan="7">
+          ${p.headline ? `<div class="hexp-headline ${p.version==='B'?'version-b':''}">${esc(p.headline)}</div>` : ''}
+          <div class="hexp-body">${esc(p.text || '')}</div>
+          ${tags ? `<div class="hexp-tags">${tags}</div>` : ''}
+          <div class="hexp-stats">${stats}</div>
+          <div class="hexp-actions">
+            <button class="btn btn-outline" onclick="copyHistoryPost('${esc(p.id)}')">📋 Copy Post</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+function toggleHistoryRow(idx) {
+  const row = document.getElementById('hexp-' + idx);
+  if (row) row.classList.toggle('vis');
+}
+
+function deleteHistoryEntry(id) {
+  const log = getLog().filter(p => p.id !== id);
+  saveLog(log);
+  // Also remove from ab_log
+  const ab = getABLog().filter(e => e.id !== id);
+  saveABLog(ab);
+  renderHistory();
+  showToast('🗑️ Post deleted');
+}
+
+function copyHistoryPost(id) {
+  const p = getLog().find(e => e.id === id);
+  if (!p) return;
+  const full = [p.headline, p.text, (p.hashtags||[]).join(' ')].filter(Boolean).join('\n\n');
+  navigator.clipboard.writeText(full)
+    .then(() => showToast('✅ Post copied!'))
+    .catch(() => { const ta = Object.assign(document.createElement('textarea'), { value: full }); document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('✅ Post copied!'); });
+}
+
+/* ─────────────────────────────────────
+   INIT
+───────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  // Hash-based routing — navigate to section from URL
+  const hash = window.location.hash.replace('#', '');
+  const valid = ['dashboard', 'generator', 'ab', 'history', 'result', 'loading'];
+  if (hash && valid.includes(hash)) {
+    go(hash);
+  } else {
+    renderDashboard();
+    renderGenerator();
+  }
+});
+</script>
+
+</body>
+</html>

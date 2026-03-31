@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Task Manager</title>
+  <style>
+    /* ── Reset & base ── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: #0d1117;
+      color: #e6edf3;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      padding: 60px 16px;
+      min-height: 100vh;
+    }
+
+    /* ── Card ── */
+    .card {
+      background-color: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 32px;
+      width: 100%;
+      max-width: 540px;
+      height: fit-content;
+    }
+
+    h1 { font-size: 26px; margin-bottom: 6px; color: #58a6ff; }
+
+    /* ── Counter ── */
+    #counter { font-size: 14px; color: #8b949e; margin-bottom: 24px; }
+
+    /* ── Bar chart ── */
+    .chart { margin-bottom: 28px; display: flex; flex-direction: column; gap: 10px; }
+    .bar-row { display: flex; align-items: center; gap: 10px; }
+    .bar-label { font-size: 13px; color: #8b949e; width: 90px; flex-shrink: 0; }
+    .bar-track { flex: 1; background-color: #21262d; border-radius: 6px; height: 18px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 6px; width: 0%; transition: width 0.4s ease; }
+    .bar-fill.total     { background-color: #58a6ff; }
+    .bar-fill.completed { background-color: #3fb950; }
+    .bar-value { font-size: 13px; color: #8b949e; min-width: 32px; text-align: right; flex-shrink: 0; }
+
+    /* ── Input rows ── */
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .extras-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      align-items: center;
+    }
+
+    #task-input {
+      flex: 1;
+      padding: 10px 14px;
+      background-color: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      color: #e6edf3;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    #task-input:focus { border-color: #58a6ff; }
+    #task-input::placeholder { color: #484f58; }
+
+    #add-btn {
+      padding: 10px 18px;
+      background-color: #238636;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 20px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    #add-btn:hover { background-color: #2ea043; }
+
+    /* ── Priority buttons ── */
+    .priority-group {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .pri-btn {
+      padding: 6px 11px;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+      background: none;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #8b949e;
+      transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .pri-btn[data-p="high"]   { color: #f85149; }
+    .pri-btn[data-p="medium"] { color: #e3b341; }
+    .pri-btn[data-p="low"]    { color: #58a6ff; }
+
+    .pri-btn[data-p="high"].selected   { background-color: #3d1a1a; border-color: #f85149; }
+    .pri-btn[data-p="medium"].selected { background-color: #2d2208; border-color: #e3b341; }
+    .pri-btn[data-p="low"].selected    { background-color: #0d1f38; border-color: #58a6ff; }
+
+    /* ── Due date input ── */
+    #due-date {
+      flex: 1;
+      padding: 6px 10px;
+      background-color: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      color: #e6edf3;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    #due-date:focus { border-color: #58a6ff; }
+    #due-date::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+
+    /* ── Filter + Clear row ── */
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+
+    .filters { display: flex; gap: 8px; flex: 1; }
+
+    .filter-btn {
+      flex: 1;
+      padding: 7px 0;
+      background: none;
+      border: 1px solid #30363d;
+      border-radius: 7px;
+      color: #8b949e;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .filter-btn:hover { border-color: #58a6ff; color: #e6edf3; }
+    .filter-btn.active { background-color: #1f3358; border-color: #58a6ff; color: #58a6ff; }
+
+    /* ── Clear Completed button ── */
+    #clear-btn {
+      padding: 7px 12px;
+      background: none;
+      border: 1px solid #6e7681;
+      border-radius: 7px;
+      color: #8b949e;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+      display: none;
+    }
+    #clear-btn:hover { background-color: #f851491a; border-color: #f85149; color: #f85149; }
+
+    /* ── Task list ── */
+    #task-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      background-color: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 8px;
+      padding: 12px 14px;
+      gap: 10px;
+      transition: border-color 0.2s;
+    }
+    .task-item:hover { border-color: #30363d; }
+
+    /* Overdue highlight */
+    .task-item.overdue { border-color: #f0883e88; background-color: #1a1006; }
+
+    /* Priority dot */
+    .pri-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .pri-dot.high   { background-color: #f85149; }
+    .pri-dot.medium { background-color: #e3b341; }
+    .pri-dot.low    { background-color: #58a6ff; }
+
+    /* Checkbox */
+    .task-item input[type="checkbox"] {
+      width: 18px; height: 18px;
+      accent-color: #58a6ff;
+      cursor: pointer; flex-shrink: 0;
+    }
+
+    /* Task body */
+    .task-body { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+    .task-label { font-size: 15px; color: #e6edf3; word-break: break-word; transition: color 0.2s; }
+
+    /* Done state */
+    .task-item.done .task-label { text-decoration: line-through; color: #f85149; }
+
+    .task-dates { font-size: 11px; color: #484f58; display: flex; flex-wrap: wrap; gap: 10px; }
+    .task-dates span { white-space: nowrap; }
+    .task-dates .completed-date { color: #3fb950; }
+    .task-dates .due-date       { color: #8b949e; }
+    .task-dates .due-date.overdue-label { color: #f0883e; font-weight: bold; }
+
+    /* Delete button */
+    .delete-btn {
+      background: none;
+      border: 1px solid #6e7681;
+      color: #f85149;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 13px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+    .delete-btn:hover { background-color: #f851491a; border-color: #f85149; }
+
+    /* Empty state */
+    #empty-msg { text-align: center; color: #484f58; font-size: 14px; padding: 20px 0; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>Task Manager</h1>
+    <p id="counter">0 remaining out of 0 total</p>
+
+    <!-- Bar chart -->
+    <div class="chart">
+      <div class="bar-row">
+        <span class="bar-label">Total</span>
+        <div class="bar-track"><div class="bar-fill total" id="bar-total"></div></div>
+        <span class="bar-value" id="val-total">0</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Completed</span>
+        <div class="bar-track"><div class="bar-fill completed" id="bar-completed"></div></div>
+        <span class="bar-value" id="val-completed">0</span>
+      </div>
+    </div>
+
+    <!-- Main input -->
+    <div class="input-row">
+      <input id="task-input" type="text" placeholder="Add a new task…" />
+      <button id="add-btn" title="Add task">+</button>
+    </div>
+
+    <!-- Priority + due date -->
+    <div class="extras-row">
+      <div class="priority-group">
+        <button class="pri-btn" data-p="high">High</button>
+        <button class="pri-btn selected" data-p="medium">Medium</button>
+        <button class="pri-btn" data-p="low">Low</button>
+      </div>
+      <input id="due-date" type="date" title="Due date (optional)" />
+    </div>
+
+    <!-- Filters + Clear completed -->
+    <div class="filter-row">
+      <div class="filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="active">Active</button>
+        <button class="filter-btn" data-filter="completed">Completed</button>
+      </div>
+      <button id="clear-btn" title="Remove all completed tasks">Clear Done</button>
+    </div>
+
+    <!-- Task list -->
+    <ul id="task-list">
+      <li id="empty-msg">No tasks yet. Add one above!</li>
+    </ul>
+  </div>
+
+  <script>
+    const input        = document.getElementById('task-input');
+    const addBtn       = document.getElementById('add-btn');
+    const dueDateInput = document.getElementById('due-date');
+    const taskList     = document.getElementById('task-list');
+    const counter      = document.getElementById('counter');
+    const emptyMsg     = document.getElementById('empty-msg');
+    const barTotal     = document.getElementById('bar-total');
+    const barCompleted = document.getElementById('bar-completed');
+    const valTotal     = document.getElementById('val-total');
+    const valCompleted = document.getElementById('val-completed');
+    const clearBtn     = document.getElementById('clear-btn');
+
+    let currentFilter   = 'all';
+    let currentPriority = 'medium';
+
+    // ── Priority selector ──
+    document.querySelectorAll('.pri-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.pri-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        currentPriority = btn.dataset.p;
+      });
+    });
+
+    // ── Filter buttons ──
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        applyFilter();
+      });
+    });
+
+    function applyFilter() {
+      taskList.querySelectorAll('.task-item').forEach(li => {
+        const done = li.classList.contains('done');
+        const show =
+          currentFilter === 'all' ||
+          (currentFilter === 'active'    && !done) ||
+          (currentFilter === 'completed' &&  done);
+        li.style.display = show ? 'flex' : 'none';
+      });
+      toggleEmpty();
+    }
+
+    // ── Clear completed ──
+    clearBtn.addEventListener('click', () => {
+      taskList.querySelectorAll('.task-item.done').forEach(li => li.remove());
+      updateCounter();
+      toggleEmpty();
+      saveTasks();
+    });
+
+    // ── Date helpers ──
+    function fmt(iso) {
+      if (!iso) return null;
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+             + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function fmtDate(dateStr) {
+      if (!dateStr) return null;
+      const [y, m, d] = dateStr.split('-');
+      return `${d} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]} ${y}`;
+    }
+
+    function isOverdue(dateStr, done) {
+      if (!dateStr || done) return false;
+      return new Date(dateStr) < new Date(new Date().toDateString());
+    }
+
+    // ── localStorage helpers ──
+    function saveTasks() {
+      const tasks = [...taskList.querySelectorAll('.task-item')].map(li => ({
+        text:        li.querySelector('.task-label').textContent,
+        done:        li.classList.contains('done'),
+        priority:    li.dataset.priority   || 'medium',
+        dueDate:     li.dataset.dueDate    || null,
+        addedAt:     li.dataset.addedAt    || null,
+        completedAt: li.dataset.completedAt || null
+      }));
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    function loadTasks() {
+      const saved = JSON.parse(localStorage.getItem('tasks') || '[]');
+      saved.forEach(t => createTaskItem(t.text, t.done, t.priority || 'medium', t.dueDate || null, t.addedAt, t.completedAt));
+      toggleEmpty();
+      updateCounter();
+      applyFilter();
+    }
+
+    // ── Add task ──
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+    addBtn.addEventListener('click', addTask);
+
+    function addTask() {
+      const text = input.value.trim();
+      if (!text) return;
+      const dueDate = dueDateInput.value || null;
+      input.value = '';
+      dueDateInput.value = '';
+      createTaskItem(text, false, currentPriority, dueDate, new Date().toISOString(), null);
+      toggleEmpty();
+      updateCounter();
+      saveTasks();
+      applyFilter();
+      input.focus();
+    }
+
+    // ── Build a task <li> ──
+    function createTaskItem(text, done, priority, dueDate, addedAt, completedAt) {
+      const li = document.createElement('li');
+      li.className = 'task-item' + (done ? ' done' : '');
+      li.dataset.priority    = priority    || 'medium';
+      li.dataset.dueDate     = dueDate     || '';
+      li.dataset.addedAt     = addedAt     || '';
+      li.dataset.completedAt = completedAt || '';
+
+      if (isOverdue(dueDate, done)) li.classList.add('overdue');
+
+      // Priority dot
+      const dot = document.createElement('span');
+      dot.className = `pri-dot ${priority || 'medium'}`;
+
+      // Checkbox
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = done;
+      checkbox.addEventListener('change', () => {
+        li.classList.toggle('done', checkbox.checked);
+        li.dataset.completedAt = checkbox.checked ? new Date().toISOString() : '';
+        li.classList.toggle('overdue', isOverdue(li.dataset.dueDate, checkbox.checked));
+        updateDates(li);
+        updateCounter();
+        saveTasks();
+        applyFilter();
+      });
+
+      // Body
+      const body = document.createElement('div');
+      body.className = 'task-body';
+
+      const label = document.createElement('span');
+      label.className = 'task-label';
+      label.textContent = text;
+
+      const dates = document.createElement('div');
+      dates.className = 'task-dates';
+      body.append(label, dates);
+
+      // Delete button
+      const delBtn = document.createElement('button');
+      delBtn.className = 'delete-btn';
+      delBtn.textContent = 'Delete';
+      delBtn.addEventListener('click', () => {
+        li.remove();
+        updateCounter();
+        toggleEmpty();
+        saveTasks();
+      });
+
+      li.append(dot, checkbox, body, delBtn);
+      taskList.appendChild(li);
+      updateDates(li);
+    }
+
+    // ── Render dates row ──
+    function updateDates(li) {
+      const dates       = li.querySelector('.task-dates');
+      const addedAt     = li.dataset.addedAt;
+      const completedAt = li.dataset.completedAt;
+      const dueDate     = li.dataset.dueDate;
+      const done        = li.classList.contains('done');
+      dates.innerHTML   = '';
+
+      if (addedAt) {
+        const s = document.createElement('span');
+        s.textContent = 'Added: ' + fmt(addedAt);
+        dates.appendChild(s);
+      }
+      if (dueDate) {
+        const s = document.createElement('span');
+        s.className = 'due-date' + (isOverdue(dueDate, done) ? ' overdue-label' : '');
+        s.textContent = (isOverdue(dueDate, done) ? 'Overdue: ' : 'Due: ') + fmtDate(dueDate);
+        dates.appendChild(s);
+      }
+      if (completedAt) {
+        const s = document.createElement('span');
+        s.className = 'completed-date';
+        s.textContent = 'Completed: ' + fmt(completedAt);
+        dates.appendChild(s);
+      }
+    }
+
+    // ── Counter + bar chart ──
+    function updateCounter() {
+      const total     = taskList.querySelectorAll('.task-item').length;
+      const done      = taskList.querySelectorAll('.task-item.done').length;
+      const remaining = total - done;
+
+      counter.textContent = `${remaining} remaining out of ${total} total`;
+
+      barTotal.style.width     = total > 0 ? '100%' : '0%';
+      barCompleted.style.width = total > 0 ? `${(done / total) * 100}%` : '0%';
+      valTotal.textContent     = total;
+      valCompleted.textContent = done;
+
+      clearBtn.style.display = done > 0 ? 'block' : 'none';
+    }
+
+    // ── Empty state (filter-aware) ──
+    function toggleEmpty() {
+      const visible = [...taskList.querySelectorAll('.task-item')]
+        .filter(li => li.style.display !== 'none').length;
+
+      if (visible > 0) {
+        emptyMsg.style.display = 'none';
+      } else {
+        const msgs = {
+          all:       'No tasks yet. Add one above!',
+          active:    'No active tasks.',
+          completed: 'No completed tasks yet.'
+        };
+        emptyMsg.textContent   = msgs[currentFilter];
+        emptyMsg.style.display = 'block';
+      }
+    }
+
+    // ── Boot ──
+    loadTasks();
+  </script>
+
+</body>
+</html>
