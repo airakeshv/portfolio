@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About — Rakesh Verma</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="edit-hint">✏️ Click any text to edit it — changes save automatically</div>
+
+  <nav>
+    <span class="nav-brand" contenteditable="true" data-key="nav-brand">Rakesh Verma</span>
+    <a href="home.html">Home</a>
+    <a href="about.html" class="active">About</a>
+    <a href="projects.html">Projects</a>
+  </nav>
+
+  <main>
+    <h2>About Me</h2>
+
+    <div class="about-grid">
+      <div>
+        <div class="bio">
+          <p contenteditable="true" data-key="about-bio1">Hi, I'm Rakesh Verma — a developer passionate about building useful, well-crafted software. I enjoy solving real problems and turning ideas into working products.</p>
+          <br>
+          <p contenteditable="true" data-key="about-bio2">When I'm not coding, I'm exploring new technologies, reading, or working on side projects that challenge me to learn something new.</p>
+        </div>
+
+        <br>
+
+        <div class="interests">
+          <h2>Interests</h2>
+          <ul>
+            <li contenteditable="true" data-key="interest-1">Software Development</li>
+            <li contenteditable="true" data-key="interest-2">AI &amp; Machine Learning</li>
+            <li contenteditable="true" data-key="interest-3">Product Design</li>
+            <li contenteditable="true" data-key="interest-4">Open Source</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="photo-placeholder" contenteditable="true" data-key="photo-label">Photo</div>
+    </div>
+  </main>
+
+  <script>
+    document.querySelectorAll('[contenteditable]').forEach(el => {
+      const key = el.dataset.key;
+      const saved = localStorage.getItem('portfolio_' + key);
+      if (saved) el.innerHTML = saved;
+
+      el.addEventListener('blur', () => {
+        localStorage.setItem('portfolio_' + key, el.innerHTML);
+      });
+
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+      });
+    });
+  </script>
+
+</body>
+</html>
