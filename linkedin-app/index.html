@@ -461,9 +461,13 @@
     </div>
 
     <!-- Theme banner -->
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px">
-      <span class="badge badge-blue" id="gen-theme-badge"></span>
-      <span style="font-size:14px;color:var(--muted)">Today's theme is shaping your content</span>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:28px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span class="badge badge-blue" id="gen-theme-badge"></span>
+        <span style="font-size:13px;color:var(--muted)">Today's theme</span>
+      </div>
+      <div style="font-size:13px;color:#a0aec0;margin-bottom:6px" id="gen-theme-focus"></div>
+      <div style="font-size:12px;color:var(--muted);font-style:italic" id="gen-theme-hook"></div>
     </div>
 
     <!-- Mode toggle -->
@@ -786,8 +790,20 @@
 /* ─────────────────────────────────────
    CONSTANTS
 ───────────────────────────────────── */
-const THEMES = { 0:'Human', 1:'Mindset', 2:'Trend', 3:'Data', 4:'Story', 5:'Future', 6:'Myth-Bust' };
+const THEMES = {
+  0: { name: "Future Sunday",            emoji: "⬛", focus: "Big thinking — predictions and vision",          hookTemplate: "In 5 years, this will sound obvious...",              writeAbout: "Predictions about AI plus future of jobs and business",              tone: "Visionary, bold, slightly provocative" },
+  1: { name: "New AI Product Monday",    emoji: "🟦", focus: "New AI tool or feature just launched",            hookTemplate: "This AI launch just changed the game for [industry]", writeAbout: "What just launched, what it replaces, who should care",               tone: "Excited, informative, forward-looking" },
+  2: { name: "Breaking News Tuesday",    emoji: "🟥", focus: "What is happening right now in AI",               hookTemplate: "Most people missed this AI news today",               writeAbout: "Latest AI development, 2-3 insights, 1 bold prediction",             tone: "Urgent, slightly alarming, exclusive feeling" },
+  3: { name: "Human Angle Wednesday",    emoji: "🟨", focus: "AI in real everyday life and family",             hookTemplate: "My child used AI today and I was not ready",           writeAbout: "Personal relatable story, emotional and thought-provoking",           tone: "Warm, human, vulnerable, deeply relatable" },
+  4: { name: "Business Efficiency Thursday", emoji: "🟩", focus: "AI saving real time or real money",          hookTemplate: "This AI workflow saves 80% of the work",              writeAbout: "Specific use case, before vs after, simple framework",               tone: "Practical, data-driven, immediately useful" },
+  5: { name: "Ethics Debate Friday",     emoji: "🟪", focus: "Controversial AI topic people disagree on",       hookTemplate: "AI is not the risk. We are.",                         writeAbout: "Strong opinion, one side of debate, ask agree or disagree",           tone: "Bold, provocative, debate-starting" },
+  6: { name: "Practical Tools Saturday", emoji: "🟧", focus: "Actionable tools prompts and workflows",          hookTemplate: "I tested 20 AI tools. These 5 are insane.",           writeAbout: "Tools, prompts, workflows in list format, save-worthy",               tone: "Helpful, specific, high value, list-based" }
+};
+// Legacy emoji map for posts saved before the theme redesign
 const EMOJIS = { Human:'🤝', Mindset:'🧠', Trend:'📈', Data:'📊', Story:'📖', Future:'🚀', 'Myth-Bust':'💥' };
+// Build name→emoji lookup from new THEMES + legacy EMOJIS for old posts
+const THEME_EMOJI_BY_NAME = Object.fromEntries(Object.values(THEMES).map(t => [t.name, t.emoji]));
+const getThemeEmoji = name => THEME_EMOJI_BY_NAME[name] || EMOJIS[name] || '';
 const PROVIDER_LABELS = { anthropic: 'via Anthropic Claude', openai: 'via OpenAI GPT-4o', gemini: 'via Google Gemini' };
 
 /* ─────────────────────────────────────
@@ -880,8 +896,8 @@ function go(name) {
 ───────────────────────────────────── */
 function renderDashboard() {
   const theme = todayTheme();
-  document.getElementById('dash-theme-name').innerHTML = `<em>${theme}</em>`;
-  document.getElementById('dash-theme-badge').textContent = (EMOJIS[theme]||'') + ' ' + theme;
+  document.getElementById('dash-theme-name').innerHTML = `<em>${theme.name}</em>`;
+  document.getElementById('dash-theme-badge').textContent = theme.emoji + ' ' + theme.name;
   document.getElementById('streak-val').textContent = getStreak();
 
   // A/B winner banner
@@ -929,7 +945,7 @@ function renderDashboard() {
     return `<tr>
       <td>${fmtDate(p.date)}</td>
       <td class="topic-cell">${esc(p.topic)}</td>
-      <td><span class="badge badge-blue" style="font-size:10px">${EMOJIS[p.theme]||''} ${p.theme}</span></td>
+      <td><span class="badge badge-blue" style="font-size:10px">${getThemeEmoji(p.theme)} ${p.theme}</span></td>
       <td>${vb}</td>
       <td>${p.metrics ? p.metrics.likes    : '—'}</td>
       <td>${p.metrics ? p.metrics.comments : '—'}</td>
@@ -945,7 +961,9 @@ function renderDashboard() {
 ───────────────────────────────────── */
 function renderGenerator() {
   const theme = todayTheme();
-  document.getElementById('gen-theme-badge').textContent = (EMOJIS[theme]||'') + ' Today: ' + theme;
+  document.getElementById('gen-theme-badge').textContent = theme.emoji + ' ' + theme.name;
+  document.getElementById('gen-theme-focus').textContent = theme.focus;
+  document.getElementById('gen-theme-hook').textContent = '"' + theme.hookTemplate + '"';
   // Restore saved key for active provider
   document.getElementById('api-key-input').value = getKey(currentProvider);
   clearApiError();
@@ -1005,153 +1023,109 @@ function getRecentTopics() {
     .filter(Boolean);
 }
 
-/* ── Hook format rotation helpers ── */
-const HOOK_FORMATS = {
-  1: `Hook Format 1 — The Shocking Number:\n"[Company] just saved $[X]M using [specific tool].\nHere is exactly how they did it."`,
-  2: `Hook Format 2 — The Contrarian Take:\n"Everyone is investing in [X].\nThe data says that is a mistake."`,
-  3: `Hook Format 3 — The Breaking News Angle:\n"[Company/Person] just announced [thing].\nMost people missed what this really means."`,
-  4: `Hook Format 4 — The Uncomfortable Truth:\n"[X]% of [audience] will face [consequence]\nby [specific date]. Most boards are not ready."`,
-  5: `Hook Format 5 — The Underdog Story:\n"A [small company/startup] in [place] just\n[achievement] that [big company] spent\n$[X]M trying to do. Here is what happened."`,
-  6: `Hook Format 6 — The Debate Starter:\n"[Person/Company] said [bold statement].\n[Industry] is furious. Here is why they\nmight actually be right."`
-};
+/* SINGLE CALL — Research + Write both versions */
+function buildSystemPrompt(theme, region, audience, recentTopics) {
+  return `
+You are an elite LinkedIn ghostwriter for someone
+with 100,000 followers.
+Audience: ${audience} across ${region}.
+Current year: 2026. Never mention 2025.
 
-function getLastHookFormat() {
-  return parseInt(localStorage.getItem('last_hook_format') || '0', 10);
-}
+TODAY IS: ${theme.name}
+FOCUS: ${theme.focus}
+TONE: ${theme.tone}
 
-function saveHookFormat(num) {
-  localStorage.setItem('last_hook_format', num.toString());
-}
+━━━━━━━━━━━━━━━━━━━━━━
+STEP 1 — RESEARCH (do this first, always)
+━━━━━━━━━━━━━━━━━━━━━━
+Based on today's theme, find the most viral
+and relevant topic from these sources:
 
-function pickHookFormat() {
-  const last = getLastHookFormat();
-  const available = [1,2,3,4,5,6].filter(n => n !== last);
-  return available[Math.floor(Math.random() * available.length)];
-}
+For 🟦 Monday — New Product:
+Search: Product Hunt top launches this week,
+TechCrunch new AI tool announcements,
+Twitter/X threads about new AI releases,
+Reddit r/artificial new product discussions
 
-/* CALL 1 — Research: find the hottest trending topic */
-function buildResearchPrompt(recentTopics) {
-  const avoidSection = recentTopics && recentTopics.length > 0
-    ? `\nAVOID these topics already covered recently:\n${recentTopics.map((t,i) => `${i+1}. ${t}`).join('\n')}\nPick something completely different.\n`
-    : '';
+For 🟥 Tuesday — Breaking News:
+Search: Google News AI top story today,
+Twitter/X trending AI hashtags right now,
+Hacker News front page tech stories,
+LinkedIn trending posts this week
 
-  return `STEP 1 — RESEARCH FIRST (mandatory):
-Before writing anything, scan these sources mentally for what is HOT right now in 2026:
+For 🟨 Wednesday — Human Angle:
+Search: Reddit r/Parenting AI discussions,
+Viral Twitter threads about AI in daily life,
+Emotional LinkedIn posts getting 1000+ likes,
+Real stories about AI changing family life
 
-REDDIT: r/technology, r/artificial, r/ChatGPT, r/startups, r/Entrepreneur, r/MachineLearning, r/business, r/investing, r/ProductManagement
+For 🟩 Thursday — Business:
+Search: Case studies of AI saving money,
+Reddit r/Entrepreneur AI workflow posts,
+LinkedIn posts about automation ROI,
+Real company announcements about AI savings
 
-TWITTER/X: trending topics in tech and business, what are VCs and founders talking about today, viral threads from last 48 hours
+For 🟪 Friday — Ethics:
+Search: Twitter/X AI ethics debates today,
+Controversial AI news this week,
+LinkedIn debate posts with high comments,
+Reddit r/artificial controversial threads
 
-LINKEDIN: what posts are getting 1000+ comments, what topics are founders debating this week
+For 🟧 Saturday — Tools:
+Search: Product Hunt AI tools this week,
+Twitter threads about AI productivity,
+Reddit posts about best AI tools 2026,
+LinkedIn carousel posts about AI workflows
 
-PRODUCT HUNT: top products launched this week, what new AI tools are getting buzz
+For ⬛ Sunday — Future:
+Search: MIT Technology Review predictions,
+Top AI researcher tweets about future,
+Viral LinkedIn posts about AI predictions,
+HackerNews discussion on AI future
 
-TECH NEWS: TechCrunch, Wired, MIT Tech Review, The Information — biggest story of the week
+AVOID these recently covered topics:
+${recentTopics}
 
-BUSINESS NEWS: WSJ, Bloomberg, FT — any major business decision or company news involving AI, automation, or tech disruption
+Pick ONE topic that:
+✅ Is from last 7 days — not old news
+✅ Has a specific number or fact
+✅ Would genuinely surprise ${audience}
+✅ Has NOT been overposted on LinkedIn
+✅ Sparks emotion: fear, hope, or curiosity
 
-WHAT TO LOOK FOR:
-→ New product launch causing controversy
-→ A company saving millions using AI
-→ A CEO making a bold public statement
-→ A study or report with shocking numbers
-→ A startup disrupting a traditional industry
-→ A regulation or law affecting businesses
-→ A viral debate between tech leaders
-→ A layoff or hiring surge linked to AI
-→ A new use case nobody is talking about yet
-→ Any underdog story with business impact
+━━━━━━━━━━━━━━━━━━━━━━
+STEP 2 — WRITE VERSION A
+━━━━━━━━━━━━━━━━━━━━━━
+Format: Data Hook + Numbered List
 
-STEP 2 — TOPIC SELECTION RULES:
-Pick the ONE topic that scores highest on ALL of:
-✅ Happened in last 7 days — not old news
-✅ Has a shocking angle — surprises a CEO/CFO
-✅ Not just AI in general — must be SPECIFIC
-✅ Has real numbers — revenue, users, percentage
-✅ Would spark debate — people will disagree
-✅ NOT covered to death on LinkedIn already
-✅ Relevant to India, Europe, OR US market
+HOOK (line 1 only):
+Use this template as inspiration:
+"${theme.hookTemplate}"
+But make it SPECIFIC to the topic you found.
+Add a real number or company name.
+Never start with "I".
+${theme.name === 'Human Angle Wednesday' ? `\nWEDNESDAY EXCEPTION — Version A hook MUST:\n- Be written in first person ("I", "My", "We")\n- Reference a real human moment: child, parent,\n  colleague, or friend — no abstract statements\n- Feel like a personal confession, not a headline\n` : ''}
+[blank line]
 
-STEP 3 — TOPIC VARIETY RULE:
-Never pick topics only about:
-❌ AI impact on CEO careers (too generic)
-❌ Future of work in general (overdone)
-❌ AI replacing jobs (everyone writes this)
-
-Always consider these fresh angles:
-✅ Specific new product launch and its impact
-✅ A company's actual ROI from AI (with numbers)
-✅ A regulatory change affecting businesses
-✅ A founder's contrarian public opinion
-✅ A use case from an unexpected industry
-✅ A viral Reddit or Twitter debate translated for LinkedIn business audience
-✅ A new research finding with shocking stat
-✅ A startup that just raised or just failed
-✅ Cost savings story with specific numbers
-✅ A technology most leaders haven't heard of yet
-${avoidSection}
-STEP 4 — BEFORE WRITING CONFIRM:
-State the topic in one line.
-State which platform it is trending on.
-State the ONE shocking fact about it.
-
-Return ONLY this JSON (no markdown, no extra text):
-{
-  "topic": "specific topic name",
-  "why": "why it is viral right now",
-  "stat": "one shocking real statistic with source",
-  "platforms": "where it is trending"
-}`;
-}
-
-/* CALL 2 — Writing: generate both post versions */
-function buildWritingPrompt(topic, topicContext, theme, tone, audience, region, hookFormat) {
-  const topicLine = topicContext
-    ? `Topic to write about: ${topic}\n${topicContext}`
-    : `Topic to write about: ${topic}`;
-
-  const hookInstruction = hookFormat && HOOK_FORMATS[hookFormat]
-    ? `\nHOOK FORMAT TO USE FOR VERSION A:\n${HOOK_FORMATS[hookFormat]}\nAdapt this format exactly to the topic above. Do not use a different hook style.\n`
-    : '';
-
-  return `You are an elite LinkedIn ghostwriter.
-100,000 followers. Audience: ${audience} in ${region}.
-Theme: ${theme}. Year: 2026.
-${topicLine}
-${hookInstruction}
-CRITICAL INSTRUCTION BEFORE YOU WRITE:
-Target = 185 words per post.
-After writing each post, count every word.
-If under 180: add 2 more specific insight sentences.
-If over 190: remove least important sentence.
-Do NOT submit until word count is 180-190.
-
-━━━ VERSION A FORMAT ━━━
-
-[HEADLINE — max 10 words, makes CEO stop scrolling]
-
-[Hook — ONE line only. Follow the HOOK FORMAT specified above exactly.
-Never start with I. End with em dash thought.]
+CONTEXT (2 sentences):
+Why this matters RIGHT NOW in 2026.
+One specific stat with source.
 
 [blank line]
 
-[2 sentence context. Why this matters in 2026.
-Include dollar figure or growth percentage.]
+1. [Specific insight — one line]
+
+2. [Specific insight — one line]
+
+3. [Specific insight — one line]
+
+4. [Specific insight — one line]
 
 [blank line]
 
-1. [Insight — TWO sentences. First: specific stat or fact. Second: why it matters to the reader.]
-
-2. [Insight — TWO sentences. First: specific stat or fact. Second: practical implication.]
-
-3. [Insight — TWO sentences. First: specific stat or fact. Second: what leaders must do now.]
-
-4. [Insight — TWO sentences. First: specific stat or fact. Second: the surprising consequence.]
-
-[blank line]
-
-[AHA MOMENT — one line. The thing people screenshot.
-Must challenge a belief CEOs currently hold.]
+AHA MOMENT:
+One line that challenges mainstream belief.
+The thing people will screenshot.
 
 [blank line]
 
@@ -1159,36 +1133,39 @@ Agree or disagree? Drop your take below.
 
 [blank line]
 
-#Tag1 #Tag2 #Tag3
+#Hashtag1 #Hashtag2 #Hashtag3
 
-━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━
+STEP 3 — WRITE VERSION B
+━━━━━━━━━━━━━━━━━━━━━━
+Format: Contrarian Hook + Arrow Points
 
-━━━ VERSION B FORMAT ━━━
+HOOK (line 1 only):
+Start with a bold contrarian statement.
+Opposite angle from Version A entirely.
+Must create immediate curiosity or debate.
+${theme.name === 'Human Angle Wednesday' ? `\nWEDNESDAY EXCEPTION — Version B hook MUST:\n- Also be written in first person\n- Reference a different real human moment\n  (different person than Version A used)\n- Feel emotionally warm, not data-driven\n` : ''}
+[blank line]
 
-[HEADLINE — different from A, max 10 words]
-
-Unpopular opinion: [bold contrarian statement
-that contradicts what most business leaders believe]
+CONTEXT (2 sentences):
+Challenge what most people believe.
+One surprising data point.
 
 [blank line]
 
-[2 sentence context with 2026 data point.
-Opposite angle from Version A entirely.]
+→ [Specific insight — one line]
+
+→ [Specific insight — one line]
+
+→ [Specific insight — one line]
+
+→ [Specific insight — one line]
 
 [blank line]
 
-→ [Insight — TWO sentences. First: specific stat or fact. Second: why it matters.]
-
-→ [Insight — TWO sentences. First: specific stat or fact. Second: practical implication.]
-
-→ [Insight — TWO sentences. First: specific stat or fact. Second: what leaders must do.]
-
-→ [Insight — TWO sentences. First: specific stat or fact. Second: the surprising consequence.]
-
-[blank line]
-
-[POWERFUL CLOSER — challenges mainstream belief.
-Make reader feel they know something others don't.]
+CLOSER:
+One powerful line that makes people want
+to share this with their team.
 
 [blank line]
 
@@ -1197,38 +1174,160 @@ This conversation needs to happen now.
 
 [blank line]
 
-#Tag1 #Tag2 #Tag3 #Tag4
+#Hashtag1 #Hashtag2 #Hashtag3 #Hashtag4
 
-━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━
+RULES FOR BOTH VERSIONS:
+━━━━━━━━━━━━━━━━━━━━━━
+- EXACTLY 180-190 words. Count every word.
+- If under 180 expand with specific data points.
+- NEVER use: game-changer, synergy, leverage,
+  delighted, thrilled, excited to share,
+  in today's fast-paced world, utilize
+- Never start post with word "I" (Wednesday exception: first person required)
+- Every stat must name its source
+- Write like a human, not an AI
+- Wednesday posts must feel personal and warm
+- Friday posts must take a clear strong stance
+- Saturday posts must be in list format only
 
-BANNED WORDS — never use these:
-game-changer, synergy, leverage, delighted,
-thrilled, excited to share, fast-paced world,
-utilizing, transformative, groundbreaking,
-revolutionizing, landscape, ecosystem
+ALSO GENERATE:
+- One viral headline per version (max 10 words)
+- Best posting time for India, US, Europe
 
-RESPONSE FORMAT — JSON only, no extra text:
+RESPOND IN JSON ONLY — no extra text:
 {
-  "topic": "topic name",
-  "trendingOn": "platforms",
+  "topic": "specific topic name",
+  "trendingOn": "where you found it",
   "whyViral": ["reason1", "reason2", "reason3"],
   "viralScore": 8,
   "bestTimeIST": "8:00 AM",
   "bestTimeEST": "9:30 PM",
   "bestTimeGMT": "2:30 AM",
   "versionA": {
-    "headline": "Viral headline here",
-    "post": "Full post with proper line breaks",
+    "headline": "Viral headline max 10 words",
+    "post": "full post with line breaks",
     "wordCount": 185,
     "hashtags": ["#AI", "#Leadership", "#CEO"]
   },
   "versionB": {
-    "headline": "Different viral headline",
-    "post": "Full post with proper line breaks",
+    "headline": "Different headline max 10 words",
+    "post": "full post with line breaks",
     "wordCount": 183,
-    "hashtags": ["#GenAI", "#Founders", "#FutureOfWork", "#Innovation"]
+    "hashtags": ["#GenAI","#Founders","#FutureOfWork","#Innovation"]
   }
-}`;
+}
+`;
+}
+
+/* Manual mode writing prompt — uses user-supplied topic, skips research */
+function buildManualPrompt(topic, theme, region, audience) {
+  return `
+You are an elite LinkedIn ghostwriter for someone
+with 100,000 followers.
+Audience: ${audience} across ${region}.
+Current year: 2026. Never mention 2025.
+
+TODAY IS: ${theme.name}
+FOCUS: ${theme.focus}
+TONE: ${theme.tone}
+TOPIC (supplied by user — do NOT change it): ${topic}
+
+━━━━━━━━━━━━━━━━━━━━━━
+WRITE VERSION A
+━━━━━━━━━━━━━━━━━━━━━━
+Format: Data Hook + Numbered List
+
+HOOK (line 1 only):
+Use this template as inspiration:
+"${theme.hookTemplate}"
+But make it SPECIFIC to the topic above.
+Add a real number or company name.
+Never start with "I".
+${theme.name === 'Human Angle Wednesday' ? `\nWEDNESDAY EXCEPTION — hook MUST:\n- Be written in first person ("I", "My", "We")\n- Reference a real human moment: child, parent,\n  colleague, or friend\n` : ''}
+[blank line]
+
+CONTEXT (2 sentences): Why this matters in 2026.
+One specific stat with source.
+
+[blank line]
+
+1. [Specific insight — one line]
+2. [Specific insight — one line]
+3. [Specific insight — one line]
+4. [Specific insight — one line]
+
+[blank line]
+
+AHA MOMENT: One line people will screenshot.
+
+[blank line]
+
+Agree or disagree? Drop your take below.
+
+[blank line]
+
+#Hashtag1 #Hashtag2 #Hashtag3
+
+━━━━━━━━━━━━━━━━━━━━━━
+WRITE VERSION B
+━━━━━━━━━━━━━━━━━━━━━━
+Format: Contrarian Hook + Arrow Points
+
+HOOK (line 1 only): Bold contrarian statement,
+opposite angle from Version A.
+${theme.name === 'Human Angle Wednesday' ? `\nWEDNESDAY EXCEPTION — hook MUST be first person\nand reference a real human moment.\n` : ''}
+[blank line]
+
+CONTEXT (2 sentences): Challenge mainstream belief.
+
+[blank line]
+
+→ [Specific insight — one line]
+→ [Specific insight — one line]
+→ [Specific insight — one line]
+→ [Specific insight — one line]
+
+[blank line]
+
+Save this. Share it with your leadership team.
+This conversation needs to happen now.
+
+[blank line]
+
+#Hashtag1 #Hashtag2 #Hashtag3 #Hashtag4
+
+━━━━━━━━━━━━━━━━━━━━━━
+RULES:
+━━━━━━━━━━━━━━━━━━━━━━
+- EXACTLY 180-190 words each. Count every word.
+- NEVER use: game-changer, synergy, leverage,
+  delighted, thrilled, excited to share, utilize
+- Every stat must name its source
+
+RESPOND IN JSON ONLY — no extra text:
+{
+  "topic": "${topic}",
+  "trendingOn": "user supplied",
+  "whyViral": ["reason1", "reason2", "reason3"],
+  "viralScore": 7,
+  "bestTimeIST": "8:00 AM",
+  "bestTimeEST": "9:30 PM",
+  "bestTimeGMT": "2:30 AM",
+  "versionA": {
+    "headline": "Viral headline max 10 words",
+    "post": "full post with line breaks",
+    "wordCount": 185,
+    "hashtags": ["#AI", "#Leadership", "#CEO"]
+  },
+  "versionB": {
+    "headline": "Different headline max 10 words",
+    "post": "full post with line breaks",
+    "wordCount": 183,
+    "hashtags": ["#GenAI","#Founders","#FutureOfWork","#Innovation"]
+  }
+}
+`;
 }
 
 /* ─────────────────────────────────────
@@ -1334,32 +1433,12 @@ async function startGen() {
     let topic = rawTopic || null;
     let topicContext = null;
 
-    // CALL 1 — Research (AI mode only): find the hottest trending topic
-    const recentTopics = getRecentTopics();
-    if (!rawTopic) {
-      try {
-        const researchPrompt = buildResearchPrompt(recentTopics);
-        const rawResearch = await callAPI(currentProvider, apiKey, researchPrompt);
-        const research = parseAIResponse(rawResearch);
-        topic = research.topic || 'the most viral AI or business topic trending in 2026';
-        topicContext = [
-          research.why   ? `Why it's viral: ${research.why}` : '',
-          research.stat  ? `Key stat: ${research.stat}`       : '',
-          research.platforms ? `Trending on: ${research.platforms}` : ''
-        ].filter(Boolean).join('\n');
-      } catch (e) {
-        // Research call failed — fall back to general instruction
-        topic = 'the most viral AI or business topic trending right now in 2026';
-        topicContext = null;
-      }
-    }
-
-    // Pick hook format (rotate, never repeat same format two days in a row)
-    const hookFormat = pickHookFormat();
-
-    // CALL 2 — Writing: generate both post versions using the researched topic
-    const writingPrompt = buildWritingPrompt(topic, topicContext, theme, tone, audience, region, hookFormat);
-    const rawText = await callAPI(currentProvider, apiKey, writingPrompt);
+    // SINGLE CALL — research + write (or manual mode skips research)
+    const recentTopicsStr = getRecentTopics().map((t,i) => `${i+1}. ${t}`).join('\n') || 'None';
+    const prompt = rawTopic
+      ? buildManualPrompt(rawTopic, theme, region, audience)
+      : buildSystemPrompt(theme, region, audience, recentTopicsStr);
+    const rawText = await callAPI(currentProvider, apiKey, prompt);
     const parsed  = parseAIResponse(rawText);
 
     // Validate required fields
@@ -1384,18 +1463,18 @@ async function startGen() {
       retries++;
     }
 
+    const themeName = theme.name;
     const pairId = Date.now().toString();
-    currentGen = { pairId, topic: parsed.topic, theme, audience, region, intelligence: parsed };
+    currentGen = { pairId, topic: parsed.topic, theme: themeName, audience, region, intelligence: parsed };
 
     // Auto-save both posts to log
-    saveHookFormat(hookFormat);
     const log = getLog();
-    log.push({ id: pairId+'_A', pairId, version:'A', date: todayStr(), topic: parsed.topic, theme,
+    log.push({ id: pairId+'_A', pairId, version:'A', date: todayStr(), topic: parsed.topic, theme: themeName,
                headline: parsed.versionA.headline || '', hashtags: parsed.versionA.hashtags || [],
-               text: stripHashtagLines(parsed.versionA.post), hookFormat });
-    log.push({ id: pairId+'_B', pairId, version:'B', date: todayStr(), topic: parsed.topic, theme,
+               text: stripHashtagLines(parsed.versionA.post) });
+    log.push({ id: pairId+'_B', pairId, version:'B', date: todayStr(), topic: parsed.topic, theme: themeName,
                headline: parsed.versionB.headline || '', hashtags: parsed.versionB.hashtags || [],
-               text: stripHashtagLines(parsed.versionB.post), hookFormat });
+               text: stripHashtagLines(parsed.versionB.post) });
     saveLog(log);
 
     renderResult(parsed, theme);
@@ -1424,7 +1503,7 @@ async function startGen() {
    SCREEN 4 — RENDER RESULT
 ───────────────────────────────────── */
 function renderResult(parsed, theme) {
-  const tLabel = (EMOJIS[theme]||'') + ' ' + theme;
+  const tLabel = (typeof theme === 'object' ? theme.emoji + ' ' + theme.name : getThemeEmoji(theme) + ' ' + theme);
   document.getElementById('result-theme-a').textContent = tLabel;
   document.getElementById('result-theme-b').textContent = tLabel;
 
@@ -1629,7 +1708,7 @@ function renderHistory() {
       <tr class="history-row" onclick="toggleHistoryRow(${idx})">
         <td>${fmtDate(p.date)}</td>
         <td class="topic-cell">${esc(p.topic || '—')}</td>
-        <td><span class="badge badge-blue" style="font-size:10px">${EMOJIS[p.theme]||''} ${p.theme||''}</span></td>
+        <td><span class="badge badge-blue" style="font-size:10px">${getThemeEmoji(p.theme)} ${p.theme||''}</span></td>
         <td>${vBadge}</td>
         <td>${wc}</td>
         <td class="score-val">${score}</td>
